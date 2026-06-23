@@ -299,7 +299,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
   <div class="onboard-box">
     <div class="onboard-icon"><i class="fas fa-waveform"></i></div>
     <h2>Hey, I'm Kwame</h2>
-    <p>Your private AI assistant, by TheVariant. Runs on your device, stays offline, remembers what matters. What's your name?</p>
+    <p>Your private AI assistant, by Nana Kwame Dickson. Runs on your device, stays offline, remembers what matters. What's your name?</p>
     <input type="text" id="obName" class="ob-input" placeholder="Your first name" maxlength="30" autocomplete="off">
     <button class="ob-btn" id="obContinue">Continue</button>
   </div>
@@ -391,7 +391,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
         <button class="qa-btn" onclick="addExample('Tell me a joke')">Joke</button>
         <button class="qa-btn" onclick="addExample('What do you remember about me?')">What do you remember?</button>
       </div>
-      <div class="footer-credit">Hey Kwame · by TheVariant</div>
+      <div class="footer-credit">Hey Kwame · by Nana Kwame Dickson</div>
     </div>
   </footer>
 </div>
@@ -537,7 +537,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
     <div class="msec">
       <div class="msec-label">Features</div>
       <ul class="feat-list">
-        <li><i class="fas fa-check check"></i>Persistent memory — learns who you are over time</li>
+        <li><i class="fas fa-check check"></i>Persistent memory; learns who you are over time</li>
         <li><i class="fas fa-check check"></i>Adjustable tone, language, and voice</li>
         <li><i class="fas fa-check check"></i>One-tap copy on every response</li>
         <li><i class="fas fa-check check"></i>Speech recognition and optional text-to-speech</li>
@@ -1031,8 +1031,8 @@ function boot() {
   renderMemoryStrip();
   if (state.synthesis) { state.synthesis.getVoices(); state.synthesis.onvoiceschanged=()=>state.synthesis.getVoices(); }
   const intro = userName
-    ? `Hey ${userName}! Downloading the Kwame AI engine now. Watch the progress bar above — happens once, then I work offline. I also remember things you tell me.`
-    : `Hello! Downloading now — watch the bar above. Once done I work offline and remember things you share with me.`;
+    ? `Hey ${userName}! Downloading the Kwame AI engine now. Watch the progress bar above happens once, then I work offline. I also remember things you tell me.`
+    : `Hello! Downloading now; watch the bar above. Once done I work offline and remember things you share with me.`;
   addMessage('assistant', intro);
   initWebLLM();
 }
