@@ -12,11 +12,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* ════════════════════════════════════════════════════════
-   DESIGN TOKENS — Apple-inspired, single consistent palette
-   ════════════════════════════════════════════════════════ */
 :root{
   --bg:#000000;
+  --sidebar:#111113;
   --surface:#1c1c1e;
   --surface-2:#2c2c2e;
   --surface-3:#3a3a3c;
@@ -31,379 +29,510 @@
   --text:#f5f5f7;
   --text-2:#98989d;
   --text-3:#636366;
-  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:26px;
-  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px;
+  --r-sm:10px;--r-md:14px;--r-lg:20px;--r-xl:26px;
   --ease:cubic-bezier(.4,0,.2,1);
+  --sidebar-w:260px;
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%;overflow:hidden}
 body{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  overflow:hidden;
+  background:var(--bg);color:var(--text);
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
+button,input,select,textarea{font-family:inherit}
+button{-webkit-tap-highlight-color:transparent;cursor:pointer}
 
-/* Flat, single static background — no animated layers (perf-friendly) */
-#bg{
-  position:fixed;inset:0;z-index:0;
+/* ── Layout shell ── */
+#shell{display:flex;height:100vh;width:100vw;overflow:hidden;position:relative}
+
+/* ═══════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════ */
+#sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--sidebar);
+  border-right:1px solid var(--hairline-soft);
+  display:flex;flex-direction:column;
+  height:100vh;overflow:hidden;
+  transition:transform .28s var(--ease);
+  z-index:40;
+}
+#sidebar.collapsed{transform:translateX(calc(-1 * var(--sidebar-w)))}
+
+.sb-top{padding:14px 12px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sb-brand{display:flex;align-items:center;gap:9px}
+.sb-brand-icon{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0}
+.sb-brand-name{font-size:14px;font-weight:700;letter-spacing:-.02em}
+.sb-new{width:32px;height:32px;border-radius:9px;background:transparent;border:1px solid var(--hairline);color:var(--text-2);font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s var(--ease)}
+.sb-new:hover{background:var(--surface-2);color:var(--text)}
+
+.sb-search{padding:0 10px 10px;flex-shrink:0}
+.sb-search-wrap{position:relative}
+.sb-search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:11px;pointer-events:none}
+#histSearch{width:100%;padding:7px 10px 7px 28px;border-radius:8px;background:var(--surface-2);border:1px solid var(--hairline-soft);color:var(--text);font-size:12px;outline:none}
+#histSearch::placeholder{color:var(--text-3)}
+#histSearch:focus{border-color:var(--accent)}
+
+.sb-hist-scroll{flex:1;overflow-y:auto;padding:0 8px}
+.sb-section-label{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;padding:10px 6px 5px}
+
+.hist-item{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;
+  cursor:pointer;transition:background .12s var(--ease);position:relative;
+  border:1px solid transparent;
+}
+.hist-item:hover{background:var(--surface-2)}
+.hist-item.active{background:var(--surface);border-color:var(--hairline)}
+.hist-item-icon{font-size:11px;color:var(--text-3);flex-shrink:0;width:14px;text-align:center}
+.hist-item-text{flex:1;min-width:0}
+.hist-item-title{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.hist-item-meta{font-size:10.5px;color:var(--text-3);margin-top:1px}
+.hist-item-del{
+  width:20px;height:20px;border-radius:5px;background:none;border:none;
+  color:var(--text-3);font-size:10px;display:none;align-items:center;justify-content:center;flex-shrink:0;
+}
+.hist-item:hover .hist-item-del{display:flex}
+.hist-item-del:hover{background:rgba(255,69,58,.15);color:var(--red)}
+
+.sb-bottom{flex-shrink:0;padding:10px 8px 14px;border-top:1px solid var(--hairline-soft)}
+.sb-bottom-btn{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;width:100%;background:none;border:none;color:var(--text-2);font-size:12.5px;transition:background .12s var(--ease)}
+.sb-bottom-btn:hover{background:var(--surface-2);color:var(--text)}
+.sb-bottom-btn i{font-size:12px;width:14px;text-align:center}
+
+/* Sidebar overlay for mobile */
+#sidebarOverlay{display:none;position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.5)}
+#sidebarOverlay.show{display:block}
+
+/* ═══════════════════════════════════
+   MAIN PANEL
+═══════════════════════════════════ */
+#main{
+  flex:1;min-width:0;height:100vh;
+  display:flex;flex-direction:column;
+  position:relative;
   background:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(10,132,255,.10), transparent),
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(10,132,255,.08), transparent),
     var(--bg);
 }
 
-button,input,select{font-family:inherit}
-button{-webkit-tap-highlight-color:transparent}
-
-/* ── App shell ── */
-#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
-
 /* ── Header ── */
-header{flex-shrink:0;padding:14px 18px 10px;border-bottom:1px solid var(--hairline-soft)}
-.hdr{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:11px;min-width:0}
-.brand-icon{
-  width:36px;height:36px;border-radius:10px;flex-shrink:0;
-  background:var(--accent);
-  display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;
+header{
+  flex-shrink:0;padding:12px 16px 10px;
+  border-bottom:1px solid var(--hairline-soft);
+  display:flex;align-items:center;gap:10px;
 }
-.brand-text{min-width:0}
-.brand-row{display:flex;align-items:center;gap:7px}
-.brand-name{font-size:16px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
-.brand-badge{font-size:9.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:999px;white-space:nowrap}
-.status-row{display:flex;align-items:center;gap:5px;margin-top:1px}
-.sdot{width:6px;height:6px;border-radius:50%;background:var(--green)}
-#statusText{font-size:11px;color:var(--text-2)}
+.hdr-left{display:flex;align-items:center;gap:8px}
+#sidebarToggle{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--hairline);color:var(--text-2);font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s var(--ease)}
+#sidebarToggle:hover{background:var(--surface-2);color:var(--text)}
+.chat-title-wrap{flex:1;min-width:0}
+#chatTitleDisplay{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.hdr-status{display:flex;align-items:center;gap:5px;margin-top:1px}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+#statusText{font-size:10.5px;color:var(--text-2)}
 .hdr-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.icon-btn{
-  width:36px;height:36px;border-radius:10px;background:var(--surface);
-  border:1px solid var(--hairline);cursor:pointer;color:var(--text);
-  font-size:14px;display:flex;align-items:center;justify-content:center;
-  transition:background .15s var(--ease);
-}
-.icon-btn:active{background:var(--surface-2)}
+.icon-btn{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--hairline);color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s var(--ease)}
+.icon-btn:hover{background:var(--surface-2)}
 
-/* ── Install banner ── */
-#installBanner{flex-shrink:0;margin:10px 18px 0;border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--hairline)}
+/* ── Banners ── */
+.banner-stack{flex-shrink:0;display:flex;flex-direction:column;gap:0}
+#installBanner{margin:8px 14px 0;border-radius:var(--r-md);padding:9px 12px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--hairline)}
 #installBanner.hidden{display:none}
-#installBanner span{font-size:12px;color:var(--text-2);flex:1}
+#installBanner span{font-size:11.5px;color:var(--text-2);flex:1}
 #installBanner strong{color:var(--text)}
-.install-btn{border-radius:8px;padding:6px 13px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
-.dismiss-x{background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px;font-size:12px}
-
-/* ── Model loading banner ── */
-#modelBanner{flex-shrink:0;margin:10px 18px 0;border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--hairline)}
+.install-btn{border-radius:7px;padding:5px 11px;background:var(--accent);border:none;color:#fff;font-size:11.5px;font-weight:600}
+.dismiss-x{background:none;border:none;color:var(--text-3);padding:3px;font-size:11px}
+#modelBanner{margin:8px 14px 0;border-radius:var(--r-md);padding:9px 12px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--hairline)}
 #modelBanner.done{display:none}
-.prog-track{flex:1;height:4px;border-radius:2px;background:var(--surface-3);overflow:hidden}
+.prog-track{flex:1;height:3px;border-radius:2px;background:var(--surface-3);overflow:hidden}
 #progressBar{height:100%;width:0%;border-radius:2px;background:var(--accent);transition:width .3s var(--ease)}
-#bannerText{font-size:11px;color:var(--text-2);white-space:nowrap;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+#bannerText{font-size:10.5px;color:var(--text-2);white-space:nowrap;min-width:30px;text-align:right;font-variant-numeric:tabular-nums}
 
-/* ── Floating status pill (signature element) ── */
+/* ── Floating status pill ── */
 #statusPill{
-  position:fixed;top:14px;left:50%;
-  transform:translate(-50%,-90px);
+  position:absolute;top:12px;left:50%;
+  transform:translate(-50%,-80px);
   z-index:50;display:flex;align-items:center;gap:8px;
-  padding:9px 16px;border-radius:999px;
-  background:rgba(28,28,30,.92);
+  padding:8px 14px;border-radius:999px;
+  background:rgba(28,28,30,.94);
   border:1px solid var(--hairline);
   box-shadow:0 8px 24px rgba(0,0,0,.4);
-  transition:transform .35s var(--ease);
+  transition:transform .3s var(--ease);
   pointer-events:none;
 }
-#statusPill.show{transform:translate(-50%,0)}
-.pill-wave{display:flex;align-items:center;gap:2px;height:16px}
-.pill-bar{width:2.5px;border-radius:2px;background:var(--accent);animation:pbar 1s ease-in-out infinite}
-.pill-bar:nth-child(1){height:5px;animation-delay:0s}
-.pill-bar:nth-child(2){height:10px;animation-delay:.12s}
-.pill-bar:nth-child(3){height:16px;animation-delay:.24s}
-.pill-bar:nth-child(4){height:10px;animation-delay:.36s}
-.pill-bar:nth-child(5){height:5px;animation-delay:.48s}
+#statusPill.show{transform:translate(-50%,58px)}
+.pill-wave{display:flex;align-items:center;gap:2px;height:14px}
+.pill-bar{width:2px;border-radius:2px;background:var(--accent);animation:pbar 1s ease-in-out infinite}
+.pill-bar:nth-child(1){height:4px;animation-delay:0s}
+.pill-bar:nth-child(2){height:9px;animation-delay:.12s}
+.pill-bar:nth-child(3){height:14px;animation-delay:.24s}
+.pill-bar:nth-child(4){height:9px;animation-delay:.36s}
+.pill-bar:nth-child(5){height:4px;animation-delay:.48s}
 @keyframes pbar{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
-.pill-spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:spin .8s linear infinite}
+.pill-spinner{width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-#statusPillText{font-size:12.5px;font-weight:500;color:var(--text)}
+#statusPillText{font-size:12px;font-weight:500;color:var(--text)}
 
-/* ── Main scroll ── */
-main{flex:1;overflow-y:auto;padding:0 18px 8px;-webkit-overflow-scrolling:touch}
-.chat-wrap{max-width:720px;margin:0 auto}
+/* ═══════════════════════════════════
+   CHAT AREA — the fix that matters
+═══════════════════════════════════ */
+#chatScroll{
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
+  /* Critical: this is its own scroll container */
+  display:flex;
+  flex-direction:column;
+}
+#chatInner{
+  flex:1;
+  max-width:720px;
+  width:100%;
+  margin:0 auto;
+  padding:20px 16px 12px;
+  display:flex;
+  flex-direction:column;
+}
 
-/* ── Hero ── */
-.hero{text-align:center;padding:28px 0 18px}
-.hero h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:5px}
-.hero p{font-size:13px;color:var(--text-2)}
-.hero-greeting{font-size:13px;color:var(--accent);margin-top:6px;font-weight:500}
+/* ── Hero (empty state) ── */
+.hero{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:20px 0 10px;
+  min-height:200px;
+}
+.hero-icon{width:52px;height:52px;border-radius:15px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:21px;color:#fff;margin-bottom:14px}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-bottom:5px}
+.hero p{font-size:12.5px;color:var(--text-2)}
+.hero-greeting{font-size:12.5px;color:var(--accent);margin-top:5px;font-weight:500}
 
 /* ── Quick cards ── */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
-@media(max-width:540px){.cards{grid-template-columns:1fr}}
-.card{
-  border-radius:var(--r-lg);padding:14px;cursor:pointer;
-  background:var(--surface);border:1px solid var(--hairline);
-  transition:background .15s var(--ease);
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px;width:100%;max-width:600px}
+@media(max-width:480px){.cards{grid-template-columns:1fr 1fr}}
+.card{border-radius:var(--r-lg);padding:12px;cursor:pointer;background:var(--surface);border:1px solid var(--hairline);transition:background .12s var(--ease)}
+.card:hover{background:var(--surface-2)}
+.card-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-size:12px;background:var(--accent-soft);color:var(--accent)}
+.card h3{font-size:11.5px;font-weight:600;margin-bottom:1px}
+.card p{font-size:10.5px;color:var(--text-2)}
+
+/* ── Memory strip ── */
+#memoryStrip{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.mem-chip{display:flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px 4px 9px;background:var(--surface);border:1px solid var(--hairline);font-size:10.5px;color:var(--text-2)}
+.mem-chip i.fa-brain{color:var(--accent);font-size:8px}
+.mem-chip-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:9px;padding:0;line-height:1;margin-left:1px}
+.mem-chip-del:hover{color:var(--red)}
+
+/* ── Messages ── */
+#messages{display:flex;flex-direction:column;gap:10px;padding-bottom:8px}
+.msg-row{display:flex;flex-direction:column}
+.msg-row.user{align-items:flex-end}
+.msg-row.assistant{align-items:flex-start}
+
+.bubble{
+  max-width:78%;padding:10px 14px;
+  border-radius:18px;
+  animation:slideIn .18s var(--ease);
+  position:relative;font-size:14px;line-height:1.6;
 }
-.card:active{background:var(--surface-2)}
-.card-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:9px;font-size:13px;background:var(--accent-soft);color:var(--accent)}
-.card h3{font-size:12.5px;font-weight:600;margin-bottom:2px}
-.card p{font-size:11px;color:var(--text-2)}
-
-/* ── Memory chip strip ── */
-#memoryStrip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.mem-chip{display:flex;align-items:center;gap:6px;border-radius:999px;padding:5px 11px 5px 10px;background:var(--surface);border:1px solid var(--hairline);font-size:11px;color:var(--text-2)}
-.mem-chip i.fa-brain{color:var(--accent);font-size:9px}
-.mem-chip-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:10px;padding:0;line-height:1;margin-left:2px}
-.mem-chip-del:active{color:var(--red)}
-
-/* ── Messages — iMessage-style bubbles ── */
-#messages{display:flex;flex-direction:column;gap:8px;padding-bottom:6px}
-.bubble{max-width:78%;padding:10px 14px;border-radius:18px;animation:slideIn .2s var(--ease);position:relative;font-size:14px;line-height:1.5}
-.bubble.user{background:var(--accent);color:#fff;margin-left:auto;border-bottom-right-radius:5px}
-.bubble.assistant{background:var(--surface-2);color:var(--text);margin-right:auto;border-bottom-left-radius:5px}
-@keyframes slideIn{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-.bubble p{white-space:pre-wrap}
-.bubble time{font-size:9.5px;display:block;margin-top:3px}
-.bubble.user time{color:rgba(255,255,255,.65)}
-.bubble.assistant time{color:var(--text-3)}
+.bubble.user{background:var(--accent);color:#fff;border-bottom-right-radius:5px}
+.bubble.assistant{background:var(--surface-2);color:var(--text);border-bottom-left-radius:5px}
+@keyframes slideIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.bubble p{white-space:pre-wrap;word-break:break-word}
+.msg-meta{display:flex;align-items:center;gap:8px;margin-top:3px;padding:0 4px}
+.msg-time{font-size:9.5px;color:var(--text-3)}
 .copy-btn{
-  position:absolute;top:-9px;right:-9px;width:24px;height:24px;border-radius:50%;
-  background:var(--surface-3);border:1px solid var(--hairline);color:var(--text-2);
-  cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .15s var(--ease);
+  background:none;border:none;color:var(--text-3);font-size:10px;
+  display:flex;align-items:center;gap:3px;padding:2px 4px;border-radius:4px;
+  transition:color .12s var(--ease);
 }
-.bubble.assistant:hover .copy-btn{opacity:1}
-.copy-btn.copied{color:var(--green);border-color:var(--green)}
+.copy-btn:hover{color:var(--text-2)}
+.copy-btn.copied{color:var(--green)}
 
-/* ── Footer ── */
-footer{flex-shrink:0;padding:10px 18px 14px;border-top:1px solid var(--hairline-soft)}
+/* Typing indicator */
+.typing-dots{display:flex;align-items:center;gap:4px;padding:12px 16px}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--text-3);animation:tdot 1.2s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+/* ═══════════════════════════════════
+   FOOTER / INPUT
+═══════════════════════════════════ */
+footer{
+  flex-shrink:0;
+  padding:10px 16px 14px;
+  border-top:1px solid var(--hairline-soft);
+  background:var(--bg);
+}
 .footer-inner{max-width:720px;margin:0 auto}
-.input-row{display:flex;align-items:center;gap:10px}
-.input-wrap{flex:1;position:relative}
+
+.input-box{
+  display:flex;align-items:flex-end;gap:8px;
+  background:var(--surface);border:1px solid var(--hairline);
+  border-radius:16px;padding:8px 8px 8px 14px;
+  transition:border-color .15s var(--ease);
+}
+.input-box:focus-within{border-color:var(--accent)}
+
 #textInput{
-  width:100%;border-radius:22px;padding:11px 46px 11px 16px;
-  background:var(--surface);border:1px solid var(--hairline);color:var(--text);
-  font-size:14px;outline:none;transition:border-color .15s var(--ease);
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text);font-size:14px;line-height:1.5;
+  resize:none;max-height:140px;min-height:24px;
+  overflow-y:auto;padding:0;
 }
 #textInput::placeholder{color:var(--text-3)}
-#textInput:focus{border-color:var(--accent)}
-#sendBtn{
-  position:absolute;right:5px;top:50%;transform:translateY(-50%);
-  width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;
-  cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;
-}
-#sendBtn:active{background:var(--accent-press)}
+
+.input-btns{display:flex;align-items:center;gap:5px;flex-shrink:0;padding-bottom:1px}
 #micButton{
-  width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent);
-  border:none;cursor:pointer;color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;
-  transition:background .15s var(--ease);
+  width:34px;height:34px;border-radius:50%;background:var(--surface-3);border:none;
+  color:var(--text-2);font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s var(--ease),color .15s var(--ease);
 }
-#micButton:active{background:var(--accent-press)}
-#micButton.listening{background:var(--red)}
+#micButton:hover{background:var(--surface-2);color:var(--text)}
+#micButton.listening{background:var(--red);color:#fff}
+#sendBtn{
+  width:34px;height:34px;border-radius:50%;background:var(--accent);border:none;
+  color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;
+  transition:background .12s var(--ease);
+}
+#sendBtn:hover{background:var(--accent-press)}
+#sendBtn:disabled{background:var(--surface-3);color:var(--text-3)}
 
-.quick-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:9px}
-.qa-btn{border-radius:999px;padding:5px 12px;background:var(--surface);border:1px solid var(--hairline);color:var(--text-2);font-size:11px;cursor:pointer}
-.qa-btn:active{background:var(--surface-2)}
-.footer-credit{text-align:center;margin-top:10px;font-size:10px;color:var(--text-3)}
+.quick-actions{display:flex;flex-wrap:nowrap;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.quick-actions::-webkit-scrollbar{height:0}
+.qa-btn{flex-shrink:0;border-radius:999px;padding:5px 12px;background:var(--surface);border:1px solid var(--hairline);color:var(--text-2);font-size:11px;transition:background .12s var(--ease)}
+.qa-btn:hover{background:var(--surface-2);color:var(--text)}
+.footer-credit{text-align:center;margin-top:8px;font-size:9.5px;color:var(--text-3)}
 
-/* ── Onboarding ── */
+/* ═══════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════ */
 #onboardModal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.92)}
 #onboardModal.hidden{display:none}
-.onboard-box{border-radius:var(--r-xl);padding:34px 26px;max-width:340px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--hairline)}
-.onboard-icon{display:inline-flex;width:56px;height:56px;border-radius:16px;background:var(--accent);align-items:center;justify-content:center;font-size:23px;color:#fff;margin-bottom:18px}
-.onboard-box h2{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:7px}
-.onboard-box p{font-size:13px;color:var(--text-2);margin-bottom:20px;line-height:1.55}
-.ob-input{width:100%;border-radius:var(--r-md);padding:13px 15px;background:var(--surface-2);border:1px solid var(--hairline);color:var(--text);font-size:15px;outline:none;margin-bottom:12px;transition:border-color .15s var(--ease)}
+.onboard-box{border-radius:var(--r-xl);padding:32px 24px;max-width:330px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--hairline)}
+.onboard-icon{display:inline-flex;width:52px;height:52px;border-radius:15px;background:var(--accent);align-items:center;justify-content:center;font-size:22px;color:#fff;margin-bottom:16px}
+.onboard-box h2{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:7px}
+.onboard-box p{font-size:12.5px;color:var(--text-2);margin-bottom:18px;line-height:1.55}
+.ob-input{width:100%;border-radius:var(--r-md);padding:12px 14px;background:var(--surface-2);border:1px solid var(--hairline);color:var(--text);font-size:15px;outline:none;margin-bottom:11px;transition:border-color .15s var(--ease)}
 .ob-input:focus{border-color:var(--accent)}
-.ob-btn{width:100%;border-radius:var(--r-md);padding:13px;background:var(--accent);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
-.ob-btn:active{background:var(--accent-press)}
+.ob-btn{width:100%;border-radius:var(--r-md);padding:12px;background:var(--accent);border:none;color:#fff;font-size:14px;font-weight:600}
+.ob-btn:hover{background:var(--accent-press)}
 
-/* ── Modals ── */
-.modal-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0;background:rgba(0,0,0,.6)}
+/* ═══════════════════════════════════
+   MODALS
+═══════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
 .modal-overlay.open{display:flex}
 @media(min-width:560px){.modal-overlay{align-items:center;padding:18px}}
 .modal-box{
-  position:relative;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:18px 18px 28px;
-  max-width:480px;width:100%;max-height:88vh;overflow-y:auto;
+  position:relative;border-radius:var(--r-xl) var(--r-xl) 0 0;
+  padding:16px 16px 26px;max-width:480px;width:100%;
+  max-height:88vh;overflow-y:auto;
   background:var(--surface);border:1px solid var(--hairline);border-bottom:none;
 }
 @media(min-width:560px){.modal-box{border-radius:var(--r-xl);border-bottom:1px solid var(--hairline)}}
-.modal-grip{width:36px;height:4px;border-radius:2px;background:var(--surface-3);margin:0 auto 14px}
+.modal-grip{width:32px;height:3px;border-radius:2px;background:var(--surface-3);margin:0 auto 12px}
 @media(min-width:560px){.modal-grip{display:none}}
-.mhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.mhdr h2{font-size:17px;font-weight:700;letter-spacing:-.01em}
-.mclose{width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:none;color:var(--text-2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
-.msec{margin-bottom:22px}
+.mhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mhdr h2{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.mclose{width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:none;color:var(--text-2);font-size:11px;display:flex;align-items:center;justify-content:center}
+.msec{margin-bottom:20px}
 .msec:last-child{margin-bottom:0}
-.msec-label{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:9px;padding:0 2px}
+.msec-label{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;padding:0 2px}
 .mgroup{background:var(--surface-2);border-radius:var(--r-md);overflow:hidden}
-.mrow{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-size:13.5px;gap:12px}
+.mrow{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;font-size:13px;gap:10px}
 .mrow + .mrow{border-top:1px solid var(--hairline-soft)}
 .mrow span:first-child{color:var(--text)}
-.mnote{font-size:11.5px;color:var(--text-3);margin-top:8px;line-height:1.5;padding:0 2px}
-
-/* Segmented control */
+.mnote{font-size:11px;color:var(--text-3);margin-top:7px;line-height:1.5;padding:0 2px}
 .segmented{display:flex;background:var(--surface-3);border-radius:9px;padding:2px;gap:1px;width:100%}
-.segmented button{flex:1;padding:7px 4px;border-radius:7px;font-size:12px;font-weight:500;color:var(--text-2);background:transparent;border:none;cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease);white-space:nowrap}
+.segmented button{flex:1;padding:6px 4px;border-radius:7px;font-size:11.5px;font-weight:500;color:var(--text-2);background:transparent;border:none;transition:background .18s var(--ease),color .18s var(--ease);white-space:nowrap}
 .segmented button.active{background:var(--surface);color:var(--text)}
-
-.name-input{border-radius:8px;padding:7px 11px;background:var(--surface-3);border:1px solid var(--hairline);color:var(--text);font-size:13px;outline:none;width:120px}
+.name-input{border-radius:7px;padding:6px 10px;background:var(--surface-3);border:1px solid var(--hairline);color:var(--text);font-size:12.5px;outline:none;width:110px}
 .name-input:focus{border-color:var(--accent)}
-.save-btn{border-radius:8px;padding:7px 13px;background:var(--accent);border:none;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}
-.save-btn:active{background:var(--accent-press)}
-.model-select{border-radius:8px;padding:6px 10px;background:var(--surface-3);border:1px solid var(--hairline);color:var(--text);font-size:12.5px;outline:none;cursor:pointer;max-width:170px}
+.save-btn{border-radius:7px;padding:6px 12px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600}
+.save-btn:hover{background:var(--accent-press)}
+.model-select{border-radius:7px;padding:5px 9px;background:var(--surface-3);border:1px solid var(--hairline);color:var(--text);font-size:12px;outline:none;max-width:180px}
 .model-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 .dot-y{background:var(--amber)}.dot-g{background:var(--green)}.dot-r{background:var(--red)}
-
-/* iOS-style switch */
-.switch{width:44px;height:26px;border-radius:999px;background:var(--surface-3);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s var(--ease);border:none}
+.switch{width:42px;height:25px;border-radius:999px;background:var(--surface-3);position:relative;flex-shrink:0;transition:background .2s var(--ease);border:none}
 .switch.on{background:var(--green)}
-.switch-thumb{position:absolute;left:2px;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.3)}
-.switch.on .switch-thumb{transform:translateX(18px)}
-
+.switch-thumb{position:absolute;left:2px;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .2s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch.on .switch-thumb{transform:translateX(17px)}
 input[type=range]{width:100%;accent-color:var(--accent);height:4px}
-
-.mem-list{display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto;margin-bottom:10px}
-.mem-item{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border-radius:var(--r-sm);padding:10px 12px;background:var(--surface-2);font-size:12.5px;color:var(--text);line-height:1.45}
-.mem-item-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:11px;flex-shrink:0;padding:2px}
-.mem-item-del:active{color:var(--red)}
-.mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:20px 0}
-.clear-all-btn{width:100%;border-radius:var(--r-sm);padding:10px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.25);color:var(--red);font-size:12.5px;font-weight:600;cursor:pointer}
-.clear-all-btn:active{background:rgba(255,69,58,.18)}
-
+.mem-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:9px}
+.mem-item{display:flex;align-items:flex-start;justify-content:space-between;gap:9px;border-radius:var(--r-sm);padding:9px 11px;background:var(--surface-2);font-size:12px;color:var(--text);line-height:1.45}
+.mem-item-del{background:none;border:none;color:var(--text-3);font-size:10px;flex-shrink:0;padding:2px}
+.mem-item-del:hover{color:var(--red)}
+.mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:18px 0}
+.clear-all-btn{width:100%;border-radius:var(--r-sm);padding:9px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.25);color:var(--red);font-size:12px;font-weight:600}
+.clear-all-btn:hover{background:rgba(255,69,58,.18)}
 .add-mem-row{display:flex;gap:7px}
 #manualMemInput{flex:1;width:auto}
-
-.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.tech-item{border-radius:var(--r-sm);padding:10px 12px;background:var(--surface-2)}
-.tech-label{font-size:10px;color:var(--text-3)}
-.tech-value{font-size:12.5px;font-weight:600;margin-top:2px}
-.feat-list{list-style:none;display:flex;flex-direction:column;gap:8px}
-.feat-list li{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-2)}
-.check{color:var(--green);margin-top:2px;font-size:11px}
-.about-link{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface-2);border-radius:var(--r-md);font-size:13.5px;color:var(--text);cursor:pointer}
-.about-link i.fa-chevron-right{color:var(--text-3);font-size:11px}
+.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tech-item{border-radius:var(--r-sm);padding:9px 11px;background:var(--surface-2)}
+.tech-label{font-size:9.5px;color:var(--text-3)}
+.tech-value{font-size:12px;font-weight:600;margin-top:2px}
+.feat-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+.feat-list li{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text-2)}
+.check{color:var(--green);margin-top:1px;font-size:10px}
+.about-link{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--surface-2);border-radius:var(--r-md);font-size:13px;color:var(--text)}
+.about-link i.fa-chevron-right{color:var(--text-3);font-size:10px}
 
 ::-webkit-scrollbar{width:0;height:0}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
 
-@media (prefers-reduced-motion: reduce){
-  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+/* ── Mobile: sidebar slides over content ── */
+@media(max-width:700px){
+  #sidebar{
+    position:fixed;top:0;left:0;height:100vh;
+    transform:translateX(calc(-1 * var(--sidebar-w)));
+  }
+  #sidebar.open{transform:translateX(0)}
+  #main{width:100%}
 }
 </style>
 </head>
 <body>
-<div id="bg"></div>
 
-<!-- ── Onboarding ── -->
+<!-- Onboarding -->
 <div id="onboardModal">
   <div class="onboard-box">
     <div class="onboard-icon"><i class="fas fa-waveform"></i></div>
     <h2>Hey, I'm Kwame</h2>
-    <p>Your private AI assistant, by Nana Kwame Dickson. Runs on your device, stays offline, remembers what matters. What's your name?</p>
+    <p>Your private AI assistan. Runs on your device, stays offline, remembers what matters. What's your name?</p>
     <input type="text" id="obName" class="ob-input" placeholder="Your first name" maxlength="30" autocomplete="off">
-    <button class="ob-btn" id="obContinue">Continue</button>
+    <button class="ob-btn" id="obContinue">Let's go</button>
   </div>
 </div>
 
-<div id="app">
-  <!-- Floating status pill that ensures that the ui stays clean and well-organized -->
-  <div id="statusPill">
-    <div class="pill-wave" id="pillWave"><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div></div>
-    <div class="pill-spinner" id="pillSpinner" style="display:none"></div>
-    <span id="statusPillText">Listening</span>
-  </div>
+<div id="shell">
 
-  <!-- Install Banner (so users can install the app) -->
-  <div id="installBanner" class="hidden">
-    <i class="fas fa-arrow-down-to-line" style="color:var(--accent);font-size:13px;flex-shrink:0"></i>
-    <span><strong>Install Hey Kwame</strong> on your home screen for the best offline experience.</span>
-    <button class="install-btn" id="installBtn">Install</button>
-    <button class="dismiss-x" id="dismissInstall"><i class="fas fa-times"></i></button>
-  </div>
+  <!-- ── Sidebar ── -->
+  <div id="sidebarOverlay"></div>
+  <nav id="sidebar">
+    <div class="sb-top">
+      <div class="sb-brand">
+        <div class="sb-brand-icon"><i class="fas fa-waveform"></i></div>
+        <span class="sb-brand-name">Hey Kwame</span>
+      </div>
+      <button class="sb-new" id="newChatBtn" title="New chat"><i class="fas fa-plus"></i></button>
+    </div>
+    <div class="sb-search">
+      <div class="sb-search-wrap">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="histSearch" placeholder="Search chats…" autocomplete="off">
+      </div>
+    </div>
+    <div class="sb-hist-scroll" id="histScroll">
+      <div id="histList"></div>
+    </div>
+    <div class="sb-bottom">
+      <button class="sb-bottom-btn" id="sbMemBtn"><i class="fas fa-brain"></i>Memory</button>
+      <button class="sb-bottom-btn" id="sbSettingsBtn"><i class="fas fa-gear"></i>Settings</button>
+    </div>
+  </nav>
 
-  <!-- Header -->
-  <header>
-    <div class="hdr">
-      <div class="brand">
-        <div class="brand-icon"><i class="fas fa-waveform"></i></div>
-        <div class="brand-text">
-          <div class="brand-row">
-            <span class="brand-name">Hey Kwame</span>
-            <span class="brand-badge">TheVariant</span>
-          </div>
-          <div class="status-row"><div class="sdot"></div><span id="statusText">ready</span></div>
+  <!-- ── Main panel ── -->
+  <div id="main">
+
+    <!-- Floating pill -->
+    <div id="statusPill">
+      <div class="pill-wave" id="pillWave"><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div></div>
+      <div class="pill-spinner" id="pillSpinner" style="display:none"></div>
+      <span id="statusPillText">Listening</span>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <div class="hdr-left">
+        <button id="sidebarToggle" title="Toggle sidebar"><i class="fas fa-sidebar"></i></button>
+        <div class="chat-title-wrap">
+          <div id="chatTitleDisplay">New Chat</div>
+          <div class="hdr-status"><div class="sdot"></div><span id="statusText">ready</span></div>
         </div>
       </div>
       <div class="hdr-right">
+        <button class="icon-btn" id="newChatHdr" title="New chat"><i class="fas fa-plus"></i></button>
         <button class="icon-btn" id="memBtn" title="Memory"><i class="fas fa-brain"></i></button>
         <button class="icon-btn" id="settingsBtn" title="Settings"><i class="fas fa-gear"></i></button>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Model download progress -->
-  <div id="modelBanner">
-    <i class="fas fa-microchip" style="color:var(--accent);font-size:12px;flex-shrink:0"></i>
-    <div class="prog-track"><div id="progressBar"></div></div>
-    <span id="bannerText">0%</span>
+    <!-- Banners -->
+    <div class="banner-stack">
+      <div id="installBanner" class="hidden">
+        <i class="fas fa-arrow-down-to-line" style="color:var(--accent);font-size:12px;flex-shrink:0"></i>
+        <span><strong>Install Hey Kwame</strong> for the best offline experience.</span>
+        <button class="install-btn" id="installBtn">Install</button>
+        <button class="dismiss-x" id="dismissInstall"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="modelBanner">
+        <i class="fas fa-microchip" style="color:var(--accent);font-size:11px;flex-shrink:0"></i>
+        <div class="prog-track"><div id="progressBar"></div></div>
+        <span id="bannerText">0%</span>
+      </div>
+    </div>
+
+    <!-- Chat scroll area -->
+    <div id="chatScroll">
+      <div id="chatInner">
+        <!-- Hero shown on empty chat -->
+        <div class="hero" id="hero">
+          <div class="hero-icon"><i class="fas fa-waveform"></i></div>
+          <h1>Hey Kwame</h1>
+          <p>Local AI · On-device · Remembers you</p>
+          <div class="hero-greeting" id="heroGreeting"></div>
+          <div class="cards" style="margin-top:20px">
+            <div class="card" onclick="triggerExample('What time is it?')">
+              <div class="card-icon"><i class="fas fa-clock"></i></div>
+              <h3>Quick Commands</h3><p>Time, date, jokes</p>
+            </div>
+            <div class="card" onclick="triggerExample('Tell me a joke')">
+              <div class="card-icon"><i class="fas fa-comments"></i></div>
+              <h3>Natural Chat</h3><p>Real conversation</p>
+            </div>
+            <div class="card" onclick="triggerExample('Write me a birthday letter to my girlfriend')">
+              <div class="card-icon"><i class="fas fa-pen"></i></div>
+              <h3>Write for Me</h3><p>Letters, emails, drafts</p>
+            </div>
+          </div>
+        </div>
+        <div id="memoryStrip"></div>
+        <div id="messages"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-inner">
+        <div class="input-box" id="inputBox">
+          <textarea id="textInput" placeholder="Message Kwame…" rows="1" autocomplete="off"></textarea>
+          <div class="input-btns">
+            <button id="micButton" title="Voice input"><i class="fas fa-microphone" id="micIcon"></i></button>
+            <button id="sendBtn" title="Send"><i class="fas fa-arrow-up"></i></button>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="triggerExample('What can you do?')">What can you do?</button>
+          <button class="qa-btn" onclick="triggerExample('Tell me a joke')">Joke</button>
+          <button class="qa-btn" onclick="triggerExample('What do you remember about me?')">What do you remember?</button>
+          <button class="qa-btn" onclick="triggerExample('Tell me the weather')">Weather</button>
+        </div>
+        <div class="footer-credit">Hey Kwame · by TheVariant</div>
+      </div>
+    </footer>
   </div>
-
-  <!-- Main -->
-  <main id="mainScroll">
-    <div class="chat-wrap">
-      <div class="hero">
-        <h1>Hey Kwame</h1>
-        <p>Local AI · Runs on your device · Remembers you</p>
-        <div class="hero-greeting" id="heroGreeting"></div>
-      </div>
-      <div class="cards">
-        <div class="card" onclick="addExample('What time is it?')">
-          <div class="card-icon"><i class="fas fa-clock"></i></div>
-          <h3>Quick Commands</h3><p>Time, date, jokes</p>
-        </div>
-        <div class="card" onclick="addExample('Tell me a joke')">
-          <div class="card-icon"><i class="fas fa-comments"></i></div>
-          <h3>Natural Chat</h3><p>Real conversation</p>
-        </div>
-        <div class="card" onclick="addExample('Write me a birthday letter to my girlfriend')">
-          <div class="card-icon"><i class="fas fa-pen"></i></div>
-          <h3>Write for Me</h3><p>Letters, emails, drafts</p>
-        </div>
-      </div>
-      <div id="memoryStrip"></div>
-      <div id="messages"></div>
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer>
-    <div class="footer-inner">
-      <div class="input-row">
-        <div class="input-wrap">
-          <input type="text" id="textInput" placeholder="Type or tap the mic…" autocomplete="off">
-          <button id="sendBtn"><i class="fas fa-arrow-up"></i></button>
-        </div>
-        <button id="micButton"><i class="fas fa-microphone" id="micIcon"></i></button>
-      </div>
-      <div class="quick-actions">
-        <button class="qa-btn" onclick="addExample('What can you do?')">What can you do?</button>
-        <button class="qa-btn" onclick="addExample('Tell me the weather')">Weather</button>
-        <button class="qa-btn" onclick="addExample('Tell me a joke')">Joke</button>
-        <button class="qa-btn" onclick="addExample('What do you remember about me?')">What do you remember?</button>
-      </div>
-      <div class="footer-credit">Hey Kwame · by Nana Kwame Dickson</div>
-    </div>
-  </footer>
 </div>
 
-<!-- ── Memory Modal ── -->
+<!-- Memory Modal -->
 <div id="memModal" class="modal-overlay">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-grip"></div>
-    <div class="mhdr">
-      <h2>Memory</h2>
-      <button class="mclose" id="closeMemBtn"><i class="fas fa-times"></i></button>
-    </div>
+    <div class="mhdr"><h2>Memory</h2><button class="mclose" id="closeMemBtn"><i class="fas fa-times"></i></button></div>
     <div class="msec">
       <div class="msec-label">What Kwame remembers about you</div>
       <div class="mem-list" id="memList"></div>
@@ -412,7 +541,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
     <div class="msec">
       <div class="msec-label">Add a memory manually</div>
       <div class="add-mem-row">
-        <input type="text" id="manualMemInput" class="name-input" placeholder="e.g. I work in tech…">
+        <input type="text" id="manualMemInput" class="name-input" placeholder="e.g. I work in tech…" style="width:auto;flex:1">
         <button class="save-btn" id="addManualMem">Add</button>
       </div>
       <p class="mnote">Kwame also learns from your conversations automatically.</p>
@@ -420,15 +549,11 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
   </div>
 </div>
 
-<!-- ── Settings Modal ── -->
+<!-- Settings Modal -->
 <div id="settingsModal" class="modal-overlay">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-grip"></div>
-    <div class="mhdr">
-      <h2>Settings</h2>
-      <button class="mclose" id="closeSettingsBtn"><i class="fas fa-times"></i></button>
-    </div>
-
+    <div class="mhdr"><h2>Settings</h2><button class="mclose" id="closeSettingsBtn"><i class="fas fa-times"></i></button></div>
     <div class="msec">
       <div class="msec-label">Profile</div>
       <div class="mgroup">
@@ -442,7 +567,6 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
       </div>
       <p class="mnote">Used in responses and letter sign-offs.</p>
     </div>
-
     <div class="msec">
       <div class="msec-label">Personality</div>
       <div class="segmented" id="tonePills">
@@ -451,7 +575,6 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
         <button data-tone="funny">Funny</button>
       </div>
     </div>
-
     <div class="msec">
       <div class="msec-label">Language</div>
       <div class="segmented" id="langPills">
@@ -461,7 +584,6 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
         <button data-lang="pid">Pidgin</button>
       </div>
     </div>
-
     <div class="msec">
       <div class="msec-label">Voice</div>
       <div class="mgroup">
@@ -470,13 +592,12 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
           <button class="switch" id="voiceToggle"><div class="switch-thumb"></div></button>
         </div>
         <div class="mrow" style="display:block">
-          <span style="display:block;margin-bottom:8px">Speaking speed</span>
+          <span style="display:block;margin-bottom:7px">Speaking speed</span>
           <input type="range" id="voiceSpeed" min="0.5" max="2" step="0.1" value="1" disabled>
         </div>
       </div>
-      <p class="mnote">Off by default. Turn on to hear replies spoken aloud.</p>
+      <p class="mnote">Off by default. Turn on to hear replies aloud.</p>
     </div>
-
     <div class="msec">
       <div class="msec-label">AI Model</div>
       <div class="mgroup">
@@ -484,8 +605,8 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
           <span>Model</span>
           <select class="model-select" id="modelSelect">
             <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Kwame 2.5 0.5B — Fast</option>
-            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" selected>Kwame 2.5 1.5B — Smart</option>
-            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">Kwame 3.2 3B — Best</option>
+            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Kwame 2.5 1.5B — Smart</option>
+            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC" selected>Kwame 3.2 3B — Best</option>
           </select>
         </div>
         <div class="mrow">
@@ -496,24 +617,22 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
           </span>
         </div>
       </div>
-      <p class="mnote">Fast uses less memory · Smart is the default balance · Best needs more RAM.</p>
+      <p class="mnote">Fast uses less memory · Smart is balanced · Best needs more RAM.</p>
     </div>
-
     <div class="msec">
       <div class="msec-label">Privacy</div>
       <div class="mgroup">
         <div class="mrow">
           <span>On-device processing</span>
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">
-            <i class="fas fa-check" style="font-size:10px"></i>Always on
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--green)">
+            <i class="fas fa-check" style="font-size:9px"></i>Always on
           </span>
         </div>
       </div>
-      <p class="mnote">After the model downloads once, everything runs locally. Nothing is sent anywhere.</p>
+      <p class="mnote">After download, everything runs locally. Nothing leaves your device.</p>
     </div>
-
     <div class="msec">
-      <div class="about-link" id="openAboutBtn">
+      <div class="about-link" id="openAboutBtn" style="cursor:pointer">
         <span>About Hey Kwame</span>
         <i class="fas fa-chevron-right"></i>
       </div>
@@ -521,28 +640,25 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
   </div>
 </div>
 
-<!-- ── Info Modal ── -->
+<!-- Info Modal -->
 <div id="infoModal" class="modal-overlay">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-grip"></div>
-    <div class="mhdr">
-      <h2>About</h2>
-      <button class="mclose" id="closeInfoBtn"><i class="fas fa-times"></i></button>
-    </div>
-    <div style="text-align:center;padding:6px 0 18px">
-      <div style="display:inline-flex;width:52px;height:52px;border-radius:15px;background:var(--accent);align-items:center;justify-content:center;font-size:21px;color:#fff;margin-bottom:9px"><i class="fas fa-waveform"></i></div>
-      <div style="font-weight:700;font-size:15px;letter-spacing:-.01em">Hey Kwame (TheVariant)</div>
-      <div style="font-size:11px;color:var(--text-2);margin-top:2px">Smart · Personal · Private</div>
+    <div class="mhdr"><h2>About</h2><button class="mclose" id="closeInfoBtn"><i class="fas fa-times"></i></button></div>
+    <div style="text-align:center;padding:4px 0 16px">
+      <div style="display:inline-flex;width:48px;height:48px;border-radius:14px;background:var(--accent);align-items:center;justify-content:center;font-size:19px;color:#fff;margin-bottom:8px"><i class="fas fa-waveform"></i></div>
+      <div style="font-weight:700;font-size:14px;letter-spacing:-.01em">Hey Kwame (TheVariant)</div>
+      <div style="font-size:10.5px;color:var(--text-2);margin-top:2px">Smart · Personal · Private</div>
     </div>
     <div class="msec">
       <div class="msec-label">Features</div>
       <ul class="feat-list">
-        <li><i class="fas fa-check check"></i>Persistent memory; learns who you are over time</li>
+        <li><i class="fas fa-check check"></i>Chat history: browse and resume past conversations</li>
+        <li><i class="fas fa-check check"></i>Persistent memory. Learns who you are over time</li>
         <li><i class="fas fa-check check"></i>Adjustable tone, language, and voice</li>
         <li><i class="fas fa-check check"></i>One-tap copy on every response</li>
         <li><i class="fas fa-check check"></i>Speech recognition and optional text-to-speech</li>
-        <li><i class="fas fa-check check"></i>100% on-device after the first download</li>
-        <li><i class="fas fa-check check"></i>Installable as a home screen app</li>
+        <li><i class="fas fa-check check"></i>100% on-device after first download</li>
       </ul>
     </div>
     <div class="msec">
@@ -551,7 +667,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
         <div class="tech-item"><div class="tech-label">Speech-to-text</div><div class="tech-value">Web Speech API</div></div>
         <div class="tech-item"><div class="tech-label">Language model</div><div class="tech-value">WebLLM / MLC</div></div>
         <div class="tech-item"><div class="tech-label">Text-to-speech</div><div class="tech-value">SpeechSynthesis</div></div>
-        <div class="tech-item"><div class="tech-label">Memory</div><div class="tech-value">localStorage</div></div>
+        <div class="tech-item"><div class="tech-label">Memory & history</div><div class="tech-value">localStorage</div></div>
       </div>
     </div>
   </div>
@@ -561,61 +677,100 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px}
 import { CreateMLCEngine } from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.73/+esm";
 
 // ═══════════════════════════════════════════════════════
-// PERSISTENT MEMORY ENGINE
+// MEMORY ENGINE
 // ═══════════════════════════════════════════════════════
 const Memory = {
-  _key: 'kwame_memories',
-  load() { try { return JSON.parse(localStorage.getItem(this._key) || '[]'); } catch{ return []; } },
-  save(arr) { localStorage.setItem(this._key, JSON.stringify(arr)); },
-  all() { return this.load(); },
-  add(fact) {
+  _key:'kwame_memories',
+  load(){ try{ return JSON.parse(localStorage.getItem(this._key)||'[]'); }catch{ return []; } },
+  save(arr){ localStorage.setItem(this._key, JSON.stringify(arr)); },
+  all(){ return this.load(); },
+  add(fact){
     const arr = this.load();
+    if (!fact.trim()) return;
     const dup = arr.some(f => f.toLowerCase().includes(fact.toLowerCase().slice(0,20)));
-    if (!dup && fact.trim()) { arr.push(fact.trim()); this.save(arr); }
+    if (!dup){ arr.push(fact.trim()); this.save(arr); }
   },
-  remove(idx) { const arr = this.load(); arr.splice(idx,1); this.save(arr); },
-  clear() { localStorage.removeItem(this._key); },
-  toPromptBlock() {
-    const arr = this.load();
+  remove(idx){ const arr=this.load(); arr.splice(idx,1); this.save(arr); },
+  clear(){ localStorage.removeItem(this._key); },
+  toPromptBlock(){
+    const arr=this.load();
     if (!arr.length) return '';
-    return '\n\nWhat you remember about this user:\n' + arr.map(f=>`- ${f}`).join('\n');
+    return '\n\nWhat you remember about this user:\n'+arr.map(f=>`- ${f}`).join('\n');
   }
 };
 
-function extractMemoryFacts(userMsg, assistantMsg) {
-  const facts = [];
+function extractMemoryFacts(userMsg){
   const u = userMsg.toLowerCase();
-  const nameM = u.match(/my name is (\w+)|i('m| am) (\w+)/);
-  if (nameM) facts.push(`User's name is ${nameM[1]||nameM[3]}`);
-  const jobM = u.match(/i (work|am) (as |a |an )?([\w\s]+?) (at|in|for)/);
-  if (jobM) facts.push(`Works as ${jobM[3]}`);
-  const locM = u.match(/i('m| am) (in|from|based in) ([\w\s,]+?)[\.\,!]/);
-  if (locM) facts.push(`Located in ${locM[3].trim()}`);
-  if (u.includes('girlfriend')) { const gfM = u.match(/girlfriend(?:'s name)? is (\w+)/); if(gfM) facts.push(`Girlfriend's name is ${gfM[1]}`); }
-  if (u.includes('wife'))       { const wM  = u.match(/wife(?:'s name)? is (\w+)/);       if(wM)  facts.push(`Wife's name is ${wM[1]}`); }
-  if (u.includes('boyfriend'))  { const bfM = u.match(/boyfriend(?:'s name)? is (\w+)/);  if(bfM) facts.push(`Boyfriend's name is ${bfM[1]}`); }
-  if (u.match(/i (love|like|enjoy|prefer) ([\w\s]+)/)) {
-    const pm = u.match(/i (?:love|like|enjoy|prefer) ([\w\s]{3,30})/);
-    if (pm) facts.push(`Likes/enjoys: ${pm[1].trim()}`);
+  const nameM = u.match(/my name is (\w+)|i'm (\w+)|i am (\w+)/);
+  if(nameM) Memory.add(`User's name is ${nameM[1]||nameM[2]||nameM[3]}`);
+  const jobM = u.match(/i (work|am) (?:as |a |an )?([\w\s]+?) (?:at|in|for)/);
+  if(jobM) Memory.add(`Works as ${jobM[2]}`);
+  const locM = u.match(/i(?:'m| am) (?:in|from|based in) ([\w\s,]+?)[\.,!]/);
+  if(locM) Memory.add(`Located in ${locM[1].trim()}`);
+  const relMap = {girlfriend:'Girlfriend',wife:'Wife',boyfriend:'Boyfriend'};
+  for(const [key,label] of Object.entries(relMap)){
+    if(u.includes(key)){
+      const m = u.match(new RegExp(`${key}(?:'s name)? is (\\w+)`));
+      if(m) Memory.add(`${label}'s name is ${m[1]}`);
+    }
   }
+  const pm = u.match(/i (?:love|like|enjoy|prefer) ([\w\s]{3,30})/);
+  if(pm) Memory.add(`Likes/enjoys: ${pm[1].trim()}`);
   const bdM = u.match(/my birthday is ([\w\s\d,]+)/);
-  if (bdM) facts.push(`Birthday: ${bdM[1].trim()}`);
-  facts.forEach(f => Memory.add(f));
+  if(bdM) Memory.add(`Birthday: ${bdM[1].trim()}`);
 }
+
+// ═══════════════════════════════════════════════════════
+// CHAT HISTORY ENGINE
+// ═══════════════════════════════════════════════════════
+const History = {
+  _key:'kwame_chat_history',
+  load(){ try{ return JSON.parse(localStorage.getItem(this._key)||'[]'); }catch{ return []; } },
+  save(arr){ localStorage.setItem(this._key, JSON.stringify(arr)); },
+  all(){ return this.load(); },
+  get(id){ return this.load().find(c=>c.id===id)||null; },
+  create(title){
+    const chat = { id: Date.now().toString(), title: title||'New Chat', messages:[], createdAt:Date.now(), updatedAt:Date.now() };
+    const arr = this.load();
+    arr.unshift(chat);
+    this.save(arr);
+    return chat;
+  },
+  update(id, messages, title){
+    const arr = this.load();
+    const idx = arr.findIndex(c=>c.id===id);
+    if(idx===-1) return;
+    arr[idx].messages = messages;
+    arr[idx].updatedAt = Date.now();
+    if(title) arr[idx].title = title;
+    this.save(arr);
+  },
+  delete(id){
+    const arr = this.load().filter(c=>c.id!==id);
+    this.save(arr);
+  },
+  generateTitle(messages){
+    const first = messages.find(m=>m.role==='user');
+    if(!first) return 'New Chat';
+    const t = first.content.trim();
+    return t.length > 38 ? t.slice(0,38)+'…' : t;
+  }
+};
 
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let userName     = localStorage.getItem('kwame_user_name') || '';
-let currentTone  = localStorage.getItem('kwame_tone') || 'casual';
-let currentLang  = localStorage.getItem('kwame_lang') || 'en';
-let voiceEnabled = localStorage.getItem('kwame_voice_enabled') === '1'; // OFF by default
+let userName    = localStorage.getItem('kwame_user_name')||'';
+let currentTone = localStorage.getItem('kwame_tone')||'casual';
+let currentLang = localStorage.getItem('kwame_lang')||'en';
+let voiceEnabled= localStorage.getItem('kwame_voice_enabled')==='1';
+let currentChatId = null;
 
 const state = {
   isListening:false, isProcessing:false,
   recognition:null, synthesis:window.speechSynthesis,
   messages:[], engine:null, modelLoaded:false, voiceSpeed:1,
-  selectedModel: localStorage.getItem('kwame_model') || 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
+  selectedModel: localStorage.getItem('kwame_model')||'Llama-3.2-3B-Instruct-q4f16_1-MLC'
 };
 
 const el = {
@@ -624,7 +779,7 @@ const el = {
   input:      document.getElementById('textInput'),
   send:       document.getElementById('sendBtn'),
   msgs:       document.getElementById('messages'),
-  scroll:     document.getElementById('mainScroll'),
+  chatScroll: document.getElementById('chatScroll'),
   status:     document.getElementById('statusText'),
   modelDot:   document.getElementById('modelDot'),
   modelStat:  document.getElementById('modelStatus'),
@@ -640,80 +795,117 @@ const el = {
   pillText:   document.getElementById('statusPillText'),
   pillWave:   document.getElementById('pillWave'),
   pillSpin:   document.getElementById('pillSpinner'),
+  hero:       document.getElementById('hero'),
+  chatTitle:  document.getElementById('chatTitleDisplay'),
+  histList:   document.getElementById('histList'),
+  sidebar:    document.getElementById('sidebar'),
+  sidebarOvl: document.getElementById('sidebarOverlay'),
 };
+
+// ═══════════════════════════════════════════════════════
+// TEXTAREA AUTO-RESIZE
+// ═══════════════════════════════════════════════════════
+el.input.addEventListener('input', () => {
+  el.input.style.height = 'auto';
+  el.input.style.height = Math.min(el.input.scrollHeight, 140) + 'px';
+});
+
+// ═══════════════════════════════════════════════════════
+// SIDEBAR TOGGLE
+// ═══════════════════════════════════════════════════════
+let sidebarOpen = window.innerWidth > 700;
+
+function setSidebar(open){
+  sidebarOpen = open;
+  if(window.innerWidth > 700){
+    el.sidebar.classList.toggle('collapsed', !open);
+  } else {
+    el.sidebar.classList.toggle('open', open);
+    el.sidebarOvl.classList.toggle('show', open);
+  }
+}
+
+document.getElementById('sidebarToggle').addEventListener('click', ()=>setSidebar(!sidebarOpen));
+el.sidebarOvl.addEventListener('click', ()=>setSidebar(false));
+
+// Handle resize
+window.addEventListener('resize', ()=>{
+  if(window.innerWidth > 700){
+    el.sidebar.classList.remove('open');
+    el.sidebarOvl.classList.remove('show');
+  }
+});
+
+// Start with sidebar open on desktop
+setSidebar(window.innerWidth > 700);
 
 // ═══════════════════════════════════════════════════════
 // ONBOARDING
 // ═══════════════════════════════════════════════════════
 const onboardModal = document.getElementById('onboardModal');
-if (userName) { onboardModal.classList.add('hidden'); boot(); }
+if(userName){ onboardModal.classList.add('hidden'); boot(); }
 
-document.getElementById('obContinue').addEventListener('click', () => {
+document.getElementById('obContinue').addEventListener('click', ()=>{
   const v = document.getElementById('obName').value.trim();
-  if (!v) { document.getElementById('obName').style.borderColor='var(--red)'; return; }
+  if(!v){ document.getElementById('obName').style.borderColor='var(--red)'; return; }
   saveName(v);
   onboardModal.classList.add('hidden');
   boot();
 });
-document.getElementById('obName').addEventListener('keypress', e => {
-  if (e.key==='Enter') document.getElementById('obContinue').click();
-});
+document.getElementById('obName').addEventListener('keypress', e=>{ if(e.key==='Enter') document.getElementById('obContinue').click(); });
 
 // ═══════════════════════════════════════════════════════
-// SYSTEM PROMPT BUILDER
+// SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════
-const TONE_INSTRUCTIONS = {
-  casual: 'Be warm, conversational, and friendly. Use natural everyday language.',
-  formal: 'Be professional, polished, and respectful. Use proper grammar and formal vocabulary.',
-  funny:  'Be witty, playful, and add light humour where appropriate. Keep it fun without being silly.'
+const TONE_INSTR = {
+  casual:'Be warm, conversational, and friendly. Use natural everyday language.',
+  formal:'Be professional, polished, and respectful. Use proper grammar and formal vocabulary.',
+  funny: 'Be witty, playful, and add light humour where appropriate. Keep it fun.'
 };
-const LANG_INSTRUCTIONS = {
+const LANG_INSTR = {
   en:  'Respond in English.',
-  tw:  'Respond primarily in Twi (Akan language of Ghana). Use simple, clear Twi that most speakers understand. You may sprinkle in English for technical terms.',
+  tw:  'Respond primarily in Twi (Akan language of Ghana). Use simple, clear Twi. You may use English for technical terms.',
   fr:  'Réponds en français. Sois naturel et fluide.',
-  pid: 'Respond in West African Pidgin English (Nigerian/Ghanaian style). E.g. "How e dey?", "I sabi am well well." Keep it authentic and natural.'
+  pid: 'Respond in West African Pidgin English (Nigerian/Ghanaian style). Keep it authentic.'
 };
 
-function buildSystemPrompt() {
-  const namePart  = userName ? `The user's name is ${userName}. Use their name occasionally — naturally, not every message.` : '';
-  const memBlock  = Memory.toPromptBlock();
-  const tone      = TONE_INSTRUCTIONS[currentTone] || TONE_INSTRUCTIONS.casual;
-  const lang      = LANG_INSTRUCTIONS[currentLang] || LANG_INSTRUCTIONS.en;
-  return `You are Kwame, a helpful personal voice assistant built by TheVariant.
+function buildSystemPrompt(){
+  const namePart = userName ? `The user's name is ${userName}. Use their name occasionally — naturally, not every message.` : '';
+  return `You are Kwame, a helpful personal assistant built by TheVariant.
 ${namePart}
-Tone: ${tone}
-Language: ${lang}
-Keep replies concise — 1 to 3 sentences for conversation, longer only for writing tasks like letters.
+Tone: ${TONE_INSTR[currentTone]||TONE_INSTR.casual}
+Language: ${LANG_INSTR[currentLang]||LANG_INSTR.en}
+Keep replies concise — 1 to 3 sentences for conversation, longer only for writing tasks.
 Never use markdown, asterisks, or bullet points. Write in plain natural text.
-Never introduce yourself or say "I am Kwame your assistant." Just respond directly.
-When writing letters or messages on behalf of the user, sign them with the user's name (${userName||'the user'}), not your own.
-Never mention that you are an AI or a local model unless directly asked.
-You were created by Nana Kwame Osei Ofori Dickson — a BYU-Idaho Cum Laude graduate in Applied Technology. If anyone asks who made you or who created you, say his full name proudly. You can also gently joke about how gloriously long his name is — four names is a lot to carry, even for a Ghanaian!${memBlock}`;
+Never introduce yourself. Just respond directly.
+When writing letters or messages, sign them with the user's name (${userName||'the user'}), not your own.
+Never mention being an AI or local model unless directly asked.
+You were created by Nana Kwame Osei Ofori Dickson — a BYU-Idaho Cum Laude graduate in Applied Technology. If asked who made you, say his full name proudly and feel free to joke about how gloriously long it is.${Memory.toPromptBlock()}`;
 }
 
 // ═══════════════════════════════════════════════════════
 // WEBLLM
 // ═══════════════════════════════════════════════════════
-async function initWebLLM() {
+async function initWebLLM(){
   el.modelSel.value = state.selectedModel;
-  try {
+  try{
     state.engine = await CreateMLCEngine(state.selectedModel, {
-      initProgressCallback: (p) => {
+      initProgressCallback:(p)=>{
         const pct = Math.round((p.progress||0)*100);
         el.progBar.style.width = pct+'%';
         el.bannerTxt.textContent = pct+'%';
-        if (el.modelStat) el.modelStat.textContent = (p.text||'Loading…').slice(0,40);
+        if(el.modelStat) el.modelStat.textContent = (p.text||'Loading…').slice(0,40);
       }
     });
     state.modelLoaded = true;
     el.banner.classList.add('done');
     el.modelDot.className = 'model-dot dot-g';
-    el.modelStat.textContent = 'Loaded';
+    el.modelStat.textContent = 'Ready';
     const greet = userName
-      ? `Hey ${userName}! Fully loaded and ready. Ask me anything, I'll remember what you tell me too.`
+      ? `Hey ${userName}! Fully loaded and ready. Ask me anything.`
       : `Fully loaded and ready! Ask me anything.`;
     addMessage('assistant', greet);
-  } catch(err) {
+  } catch(err){
     console.error('WebLLM failed:', err);
     el.progBar.style.background='var(--red)';
     el.bannerTxt.textContent='Failed';
@@ -725,72 +917,97 @@ async function initWebLLM() {
 // ═══════════════════════════════════════════════════════
 // RESPONSE GENERATION
 // ═══════════════════════════════════════════════════════
-async function generateResponse(input) {
-  if (!state.modelLoaded || !state.engine) return fallback(input);
+async function generateResponse(input){
+  if(!state.modelLoaded || !state.engine) return fallback(input);
   const msgs = [
-    { role:'system', content: buildSystemPrompt() },
-    ...state.messages.slice(-10).map(m=>({role:m.role,content:m.content})),
-    { role:'user', content: input }
+    { role:'system', content:buildSystemPrompt() },
+    ...state.messages.slice(-12).map(m=>({role:m.role,content:m.content})),
+    { role:'user', content:input }
   ];
   const res = await state.engine.chat.completions.create({
-    messages:msgs, temperature:0.68, max_tokens:220, top_p:0.85
+    messages:msgs, temperature:0.68, max_tokens:256, top_p:0.85
   });
   return res.choices[0].message.content.trim();
 }
 
-function fallback(input) {
+function fallback(input){
   const q = input.toLowerCase();
   const n = userName ? `, ${userName}` : '';
-  if (q.includes('time')) return `The current time is ${new Date().toLocaleTimeString()}${n}.`;
-  if (q.match(/date|today/)) return `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`;
-  if (q.includes('joke')) return ['Why do programmers prefer dark mode? Because light attracts bugs!','Why did the AI go to therapy? Too many neural issues!'][Math.floor(Math.random()*2)];
-  if (q.match(/memory|remember/)) {
+  if(q.includes('time')) return `The current time is ${new Date().toLocaleTimeString()}${n}.`;
+  if(q.match(/date|today/)) return `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`;
+  if(q.includes('joke')) return ['Why do programmers prefer dark mode? Because light attracts bugs!','Why did the AI go to therapy? Too many neural issues!'][Math.floor(Math.random()*2)];
+  if(q.match(/memory|remember/)){
     const mems = Memory.all();
-    return mems.length ? `I remember: ${mems.join('; ')}.` : `I don't have any memories saved yet${n}. Tell me things about yourself and I'll remember them!`;
+    return mems.length ? `I remember: ${mems.join('; ')}.` : `No memories saved yet${n}. Tell me things about yourself!`;
   }
-  return `Still loading${n} — watch the progress bar. Once it hits 100% I can answer anything.`;
+  return `Still loading${n} — watch the progress bar. Once done I can answer anything.`;
 }
 
 // ═══════════════════════════════════════════════════════
 // SPEECH RECOGNITION
 // ═══════════════════════════════════════════════════════
-function initSpeechRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
+function initSpeechRecognition(){
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return;
   state.recognition = new SR();
-  state.recognition.continuous = false; state.recognition.interimResults = true;
+  state.recognition.continuous = false;
+  state.recognition.interimResults = true;
   const langMap = { en:'en-US', tw:'ak-GH', fr:'fr-FR', pid:'en-NG' };
-  state.recognition.lang = langMap[currentLang] || 'en-US';
-  state.recognition.onstart  = () => { state.isListening=true; updateUI(); };
-  state.recognition.onend    = () => { state.isListening=false; updateUI(); };
-  state.recognition.onerror  = () => { state.isListening=false; updateUI(); };
-  state.recognition.onresult = (e) => {
+  state.recognition.lang = langMap[currentLang]||'en-US';
+  state.recognition.onstart  = ()=>{ state.isListening=true; updateUI(); };
+  state.recognition.onend    = ()=>{ state.isListening=false; updateUI(); };
+  state.recognition.onerror  = ()=>{ state.isListening=false; updateUI(); };
+  state.recognition.onresult = (e)=>{
     const t = Array.from(e.results).map(r=>r[0].transcript).join('');
-    el.pillText.textContent = t || 'Listening';
-    if (e.results[0].isFinal) processInput(t);
+    el.pillText.textContent = t||'Listening';
+    if(e.results[0].isFinal){ el.input.value=t; autoResizeInput(); processInput(t); }
   };
 }
-function startListening()  { if (state.recognition && !state.isListening) { try{ state.recognition.start(); }catch(e){} } }
-function stopListening()   { if (state.recognition && state.isListening) state.recognition.stop(); state.isListening=false; updateUI(); }
-function toggleListening() { state.isListening ? stopListening() : startListening(); }
+function startListening(){ if(state.recognition && !state.isListening){ try{ state.recognition.start(); }catch(e){} } }
+function stopListening(){ if(state.recognition && state.isListening) state.recognition.stop(); state.isListening=false; updateUI(); }
+function toggleListening(){ state.isListening ? stopListening() : startListening(); }
 
 // ═══════════════════════════════════════════════════════
 // PROCESS INPUT
 // ═══════════════════════════════════════════════════════
-async function processInput(text) {
-  if (!text.trim()) return;
+async function processInput(text){
+  if(!text.trim()) return;
   stopListening();
+
+  // Start a new chat if none active
+  if(!currentChatId){
+    const chat = History.create('New Chat');
+    currentChatId = chat.id;
+  }
+
+  hideHero();
   addMessage('user', text);
   el.input.value='';
+  el.input.style.height='auto';
   state.isProcessing=true; updateUI();
-  try {
+
+  const typingEl = showTyping();
+
+  try{
     const reply = await generateResponse(text);
+    removeTyping(typingEl);
     addMessage('assistant', reply);
-    if (voiceEnabled) speak(reply);
-    extractMemoryFacts(text, reply);
+    if(voiceEnabled) speak(reply);
+    extractMemoryFacts(text);
     renderMemoryStrip();
-  } catch(err) {
+
+    // Auto-title after first exchange
+    if(state.messages.filter(m=>m.role==='user').length===1){
+      const title = History.generateTitle(state.messages);
+      History.update(currentChatId, state.messages, title);
+      el.chatTitle.textContent = title;
+    } else {
+      History.update(currentChatId, state.messages);
+    }
+    renderHistoryList();
+  } catch(err){
     console.error(err);
+    removeTyping(typingEl);
     addMessage('assistant','Sorry, something went wrong. Please try again.');
   } finally { state.isProcessing=false; updateUI(); }
 }
@@ -798,117 +1015,292 @@ async function processInput(text) {
 // ═══════════════════════════════════════════════════════
 // MESSAGES
 // ═══════════════════════════════════════════════════════
-function addMessage(role, content) {
-  const div = document.createElement('div');
-  div.className = `bubble ${role}`;
-  const copyBtn = role==='assistant'
-    ? `<button class="copy-btn" title="Copy" onclick="copyText(this, ${JSON.stringify(content)})"><i class="fas fa-copy"></i></button>`
-    : '';
-  div.innerHTML = `
-    ${copyBtn}
-    <p>${content}</p>
-    <time>${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</time>`;
-  el.msgs.appendChild(div);
-  requestAnimationFrame(() => { el.scroll.scrollTop = el.scroll.scrollHeight; });
-  state.messages.push({ role, content, timestamp: new Date() });
+function addMessage(role, content){
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+  bubble.innerHTML = `<p>${escapeHtml(content)}</p>`;
+
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  const timeStr = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+  if(role==='assistant'){
+    const copyBtn = document.createElement('button');
+    copyBtn.className='copy-btn';
+    copyBtn.innerHTML='<i class="fas fa-copy"></i> Copy';
+    copyBtn.addEventListener('click', ()=>{
+      navigator.clipboard.writeText(content).then(()=>{
+        copyBtn.classList.add('copied');
+        copyBtn.innerHTML='<i class="fas fa-check"></i> Copied';
+        setTimeout(()=>{ copyBtn.classList.remove('copied'); copyBtn.innerHTML='<i class="fas fa-copy"></i> Copy'; },1800);
+      });
+    });
+    meta.appendChild(copyBtn);
+  }
+
+  const timeEl = document.createElement('span');
+  timeEl.className='msg-time';
+  timeEl.textContent = timeStr;
+  meta.appendChild(timeEl);
+
+  row.appendChild(bubble);
+  row.appendChild(meta);
+  el.msgs.appendChild(row);
+
+  scrollToBottom();
+  state.messages.push({ role, content, timestamp:new Date() });
 }
 
-window.copyText = function(btn, text) {
-  navigator.clipboard.writeText(text).then(() => {
-    btn.classList.add('copied');
-    btn.innerHTML='<i class="fas fa-check"></i>';
-    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML='<i class="fas fa-copy"></i>'; }, 1800);
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function scrollToBottom(){
+  requestAnimationFrame(()=>{
+    el.chatScroll.scrollTop = el.chatScroll.scrollHeight;
   });
-};
+}
+
+function showTyping(){
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble assistant typing-bubble';
+  bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  row.appendChild(bubble);
+  el.msgs.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function removeTyping(el){ if(el && el.parentNode) el.parentNode.removeChild(el); }
 
 // ═══════════════════════════════════════════════════════
-// TTS (off by default — gated by voiceEnabled)
+// NEW CHAT
 // ═══════════════════════════════════════════════════════
-function speak(text) {
-  if (!state.synthesis) return;
+function startNewChat(){
+  currentChatId = null;
+  state.messages = [];
+  el.msgs.innerHTML = '';
+  el.chatTitle.textContent = 'New Chat';
+  showHero();
+  renderHistoryList();
+  el.input.focus();
+  // On mobile close sidebar after selecting
+  if(window.innerWidth <= 700) setSidebar(false);
+}
+
+function hideHero(){ if(el.hero) el.hero.style.display='none'; }
+function showHero(){ if(el.hero) el.hero.style.display=''; }
+
+// ═══════════════════════════════════════════════════════
+// LOAD CHAT FROM HISTORY
+// ═══════════════════════════════════════════════════════
+function loadChat(id){
+  const chat = History.get(id);
+  if(!chat) return;
+  currentChatId = id;
+  state.messages = [...chat.messages];
+  el.msgs.innerHTML = '';
+  el.chatTitle.textContent = chat.title;
+
+  if(chat.messages.length === 0){
+    showHero();
+  } else {
+    hideHero();
+    chat.messages.forEach(m => {
+      const row = document.createElement('div');
+      row.className = `msg-row ${m.role}`;
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${m.role}`;
+      bubble.innerHTML = `<p>${escapeHtml(m.content)}</p>`;
+      const meta = document.createElement('div');
+      meta.className = 'msg-meta';
+      if(m.role==='assistant'){
+        const copyBtn = document.createElement('button');
+        copyBtn.className='copy-btn';
+        copyBtn.innerHTML='<i class="fas fa-copy"></i> Copy';
+        const content = m.content;
+        copyBtn.addEventListener('click', ()=>{
+          navigator.clipboard.writeText(content).then(()=>{
+            copyBtn.classList.add('copied');
+            copyBtn.innerHTML='<i class="fas fa-check"></i> Copied';
+            setTimeout(()=>{ copyBtn.classList.remove('copied'); copyBtn.innerHTML='<i class="fas fa-copy"></i> Copy'; },1800);
+          });
+        });
+        meta.appendChild(copyBtn);
+      }
+      const timeEl = document.createElement('span');
+      timeEl.className='msg-time';
+      const ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+      timeEl.textContent = ts;
+      meta.appendChild(timeEl);
+      row.appendChild(bubble);
+      row.appendChild(meta);
+      el.msgs.appendChild(row);
+    });
+    scrollToBottom();
+  }
+
+  renderHistoryList();
+  if(window.innerWidth <= 700) setSidebar(false);
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTORY LIST RENDER
+// ═══════════════════════════════════════════════════════
+function renderHistoryList(filter=''){
+  const all = History.all();
+  const filtered = filter
+    ? all.filter(c=>c.title.toLowerCase().includes(filter.toLowerCase()))
+    : all;
+
+  if(!filtered.length){
+    el.histList.innerHTML = `<div style="padding:12px 10px;font-size:12px;color:var(--text-3)">${filter ? 'No chats match.' : 'No chat history yet.'}</div>`;
+    return;
+  }
+
+  // Group by date
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  const week = new Date(today); week.setDate(week.getDate()-7);
+
+  const groups = { Today:[], Yesterday:[], 'Last 7 days':[], Older:[] };
+  filtered.forEach(c=>{
+    const d = new Date(c.updatedAt); d.setHours(0,0,0,0);
+    if(d>=today) groups.Today.push(c);
+    else if(d>=yesterday) groups.Yesterday.push(c);
+    else if(d>=week) groups['Last 7 days'].push(c);
+    else groups.Older.push(c);
+  });
+
+  let html = '';
+  for(const [label, chats] of Object.entries(groups)){
+    if(!chats.length) continue;
+    html += `<div class="sb-section-label">${label}</div>`;
+    chats.forEach(c=>{
+      const active = c.id===currentChatId ? ' active' : '';
+      const msgCount = c.messages.length;
+      html += `<div class="hist-item${active}" data-id="${c.id}">
+        <i class="fas fa-message hist-item-icon"></i>
+        <div class="hist-item-text">
+          <div class="hist-item-title">${escapeHtml(c.title)}</div>
+          <div class="hist-item-meta">${msgCount} message${msgCount!==1?'s':''}</div>
+        </div>
+        <button class="hist-item-del" data-del="${c.id}" title="Delete"><i class="fas fa-trash"></i></button>
+      </div>`;
+    });
+  }
+
+  el.histList.innerHTML = html;
+
+  el.histList.querySelectorAll('.hist-item').forEach(item=>{
+    item.addEventListener('click', e=>{
+      if(e.target.closest('.hist-item-del')) return;
+      loadChat(item.dataset.id);
+    });
+  });
+  el.histList.querySelectorAll('.hist-item-del').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const id = btn.dataset.del;
+      History.delete(id);
+      if(currentChatId===id) startNewChat();
+      else renderHistoryList(document.getElementById('histSearch').value);
+    });
+  });
+}
+
+document.getElementById('histSearch').addEventListener('input', e=>{
+  renderHistoryList(e.target.value);
+});
+
+// ═══════════════════════════════════════════════════════
+// TTS
+// ═══════════════════════════════════════════════════════
+function speak(text){
+  if(!state.synthesis) return;
   state.synthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.rate=state.voiceSpeed; u.pitch=1; u.volume=1;
   const pref = state.synthesis.getVoices().find(v=>v.name.includes('Google')||v.name.includes('Samantha')||v.name.includes('Daniel'));
-  if (pref) u.voice=pref;
+  if(pref) u.voice=pref;
   state.synthesis.speak(u);
 }
 
 // ═══════════════════════════════════════════════════════
 // MEMORY STRIP
 // ═══════════════════════════════════════════════════════
-function renderMemoryStrip() {
+function renderMemoryStrip(){
   const mems = Memory.all();
   el.memStrip.innerHTML = '';
-  if (!mems.length) return;
-  mems.slice(0,4).forEach((m,i) => {
+  if(!mems.length) return;
+  mems.slice(0,3).forEach((m,i)=>{
     const chip = document.createElement('div');
     chip.className='mem-chip';
-    chip.innerHTML=`<i class="fas fa-brain"></i>${m}<button class="mem-chip-del" onclick="deleteMem(${i})" title="Forget this"><i class="fas fa-times"></i></button>`;
+    chip.innerHTML=`<i class="fas fa-brain"></i>${escapeHtml(m)}<button class="mem-chip-del" title="Forget"><i class="fas fa-times"></i></button>`;
+    chip.querySelector('.mem-chip-del').addEventListener('click',()=>{ Memory.remove(i); renderMemoryStrip(); renderMemoryModal(); });
     el.memStrip.appendChild(chip);
   });
-  if (mems.length>4) {
+  if(mems.length>3){
     const more = document.createElement('div');
     more.className='mem-chip';
     more.style.cursor='pointer';
-    more.textContent=`+${mems.length-4} more`;
+    more.textContent=`+${mems.length-3} more`;
     more.onclick=()=>openModal('memModal');
     el.memStrip.appendChild(more);
   }
 }
 
-window.deleteMem = function(idx) {
-  Memory.remove(idx);
-  renderMemoryStrip();
-  renderMemoryModal();
-};
-
-function renderMemoryModal() {
+function renderMemoryModal(){
   const list = document.getElementById('memList');
   const mems = Memory.all();
-  if (!mems.length) { list.innerHTML='<div class="mem-empty">No memories yet. Start chatting!</div>'; return; }
+  if(!mems.length){ list.innerHTML='<div class="mem-empty">No memories yet. Start chatting!</div>'; return; }
   list.innerHTML = mems.map((m,i)=>`
     <div class="mem-item">
-      <span>${m}</span>
-      <button class="mem-item-del" onclick="deleteMem(${i})" title="Forget"><i class="fas fa-trash"></i></button>
+      <span>${escapeHtml(m)}</span>
+      <button class="mem-item-del" data-idx="${i}" title="Forget"><i class="fas fa-trash"></i></button>
     </div>`).join('');
+  list.querySelectorAll('.mem-item-del').forEach(btn=>{
+    btn.addEventListener('click',()=>{ Memory.remove(parseInt(btn.dataset.idx)); renderMemoryStrip(); renderMemoryModal(); });
+  });
 }
 
-document.getElementById('clearAllMem').addEventListener('click', () => {
-  if (confirm('Clear all memories? This cannot be undone.')) {
-    Memory.clear(); renderMemoryStrip(); renderMemoryModal();
-  }
+document.getElementById('clearAllMem').addEventListener('click',()=>{
+  if(confirm('Clear all memories?')){ Memory.clear(); renderMemoryStrip(); renderMemoryModal(); }
 });
-
-document.getElementById('addManualMem').addEventListener('click', () => {
+document.getElementById('addManualMem').addEventListener('click',()=>{
   const v = document.getElementById('manualMemInput').value.trim();
-  if (v) { Memory.add(v); document.getElementById('manualMemInput').value=''; renderMemoryStrip(); renderMemoryModal(); }
+  if(v){ Memory.add(v); document.getElementById('manualMemInput').value=''; renderMemoryStrip(); renderMemoryModal(); }
 });
 
 // ═══════════════════════════════════════════════════════
-// TONE + LANGUAGE (segmented controls, now in Settings)
+// SETTINGS — SEGMENTED CONTROLS
 // ═══════════════════════════════════════════════════════
-document.getElementById('tonePills').addEventListener('click', e => {
+document.getElementById('tonePills').addEventListener('click', e=>{
   const btn = e.target.closest('[data-tone]');
-  if (!btn) return;
+  if(!btn) return;
   currentTone = btn.dataset.tone;
   localStorage.setItem('kwame_tone', currentTone);
   document.querySelectorAll('#tonePills button').forEach(b=>b.classList.toggle('active', b===btn));
 });
 
-document.getElementById('langPills').addEventListener('click', e => {
+document.getElementById('langPills').addEventListener('click', e=>{
   const btn = e.target.closest('[data-lang]');
-  if (!btn) return;
+  if(!btn) return;
   currentLang = btn.dataset.lang;
   localStorage.setItem('kwame_lang', currentLang);
   document.querySelectorAll('#langPills button').forEach(b=>b.classList.toggle('active', b===btn));
-  if (state.recognition) {
-    const langMap = { en:'en-US', tw:'ak-GH', fr:'fr-FR', pid:'en-NG' };
-    state.recognition.lang = langMap[currentLang] || 'en-US';
+  if(state.recognition){
+    const langMap={en:'en-US',tw:'ak-GH',fr:'fr-FR',pid:'en-NG'};
+    state.recognition.lang = langMap[currentLang]||'en-US';
   }
 });
 
-function restorePills() {
+function restorePills(){
   document.querySelectorAll('#tonePills button').forEach(b=>b.classList.toggle('active', b.dataset.tone===currentTone));
   document.querySelectorAll('#langPills button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
 }
@@ -916,79 +1308,92 @@ function restorePills() {
 // ═══════════════════════════════════════════════════════
 // VOICE TOGGLE
 // ═══════════════════════════════════════════════════════
-function applyVoiceToggleUI() {
+function applyVoiceToggleUI(){
   el.voiceToggle.classList.toggle('on', voiceEnabled);
   el.vSpeed.disabled = !voiceEnabled;
 }
-el.voiceToggle.addEventListener('click', () => {
+el.voiceToggle.addEventListener('click',()=>{
   voiceEnabled = !voiceEnabled;
-  localStorage.setItem('kwame_voice_enabled', voiceEnabled ? '1':'0');
+  localStorage.setItem('kwame_voice_enabled', voiceEnabled?'1':'0');
   applyVoiceToggleUI();
-  if (!voiceEnabled && state.synthesis) state.synthesis.cancel();
+  if(!voiceEnabled && state.synthesis) state.synthesis.cancel();
 });
 
 // ═══════════════════════════════════════════════════════
-// STATUS PILL (signature floating indicator)
+// STATUS PILL
 // ═══════════════════════════════════════════════════════
-function showPill(mode) {
-  if (mode === 'listening') {
-    el.pillWave.style.display='flex'; el.pillSpin.style.display='none';
-    el.pillText.textContent='Listening';
-  } else if (mode === 'processing') {
-    el.pillWave.style.display='none'; el.pillSpin.style.display='block';
-    el.pillText.textContent='Kwame is thinking';
-  }
+function showPill(mode){
+  if(mode==='listening'){ el.pillWave.style.display='flex'; el.pillSpin.style.display='none'; el.pillText.textContent='Listening'; }
+  else if(mode==='processing'){ el.pillWave.style.display='none'; el.pillSpin.style.display='block'; el.pillText.textContent='Kwame is thinking'; }
   el.statusPill.classList.add('show');
 }
-function hidePill() { el.statusPill.classList.remove('show'); }
+function hidePill(){ el.statusPill.classList.remove('show'); }
 
 // ═══════════════════════════════════════════════════════
-// UI
+// UI UPDATE
 // ═══════════════════════════════════════════════════════
-function updateUI() {
+function updateUI(){
   el.mic.classList.toggle('listening', state.isListening);
-  el.micIcon.className = state.isListening ? 'fas fa-stop' : 'fas fa-microphone';
-  el.status.textContent = state.isListening ? 'listening' : state.isProcessing ? 'thinking' : 'ready';
-  if (state.isListening) showPill('listening');
-  else if (state.isProcessing) showPill('processing');
+  el.micIcon.className = state.isListening ? 'fas fa-stop':'fas fa-microphone';
+  el.status.textContent = state.isListening ? 'listening' : state.isProcessing ? 'thinking':'ready';
+  el.send.disabled = state.isProcessing;
+  if(state.isListening) showPill('listening');
+  else if(state.isProcessing) showPill('processing');
   else hidePill();
 }
 
-function saveName(name) {
+function saveName(name){
   userName = name.trim();
   localStorage.setItem('kwame_user_name', userName);
-  if (el.greeting) el.greeting.textContent = userName ? `Welcome back, ${userName}` : '';
+  if(el.greeting) el.greeting.textContent = userName ? `Welcome back, ${userName}` : '';
   const si = document.getElementById('settingsNameInput');
-  if (si) si.value = userName;
+  if(si) si.value = userName;
+}
+
+function autoResizeInput(){
+  el.input.style.height='auto';
+  el.input.style.height=Math.min(el.input.scrollHeight,140)+'px';
 }
 
 // ═══════════════════════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 
 ['settingsModal','infoModal','memModal'].forEach(id=>{
-  document.getElementById(id).addEventListener('click', ()=>closeModal(id));
+  document.getElementById(id).addEventListener('click',()=>closeModal(id));
 });
-document.getElementById('closeSettingsBtn').addEventListener('click', ()=>closeModal('settingsModal'));
-document.getElementById('closeInfoBtn').addEventListener('click',     ()=>closeModal('infoModal'));
-document.getElementById('closeMemBtn').addEventListener('click',      ()=>closeModal('memModal'));
-document.getElementById('settingsBtn').addEventListener('click', ()=>{ document.getElementById('settingsNameInput').value=userName; openModal('settingsModal'); });
-document.getElementById('memBtn').addEventListener('click',      ()=>{ renderMemoryModal(); openModal('memModal'); });
-document.getElementById('openAboutBtn').addEventListener('click', ()=>{ closeModal('settingsModal'); openModal('infoModal'); });
+document.getElementById('closeSettingsBtn').addEventListener('click',()=>closeModal('settingsModal'));
+document.getElementById('closeInfoBtn').addEventListener('click',()=>closeModal('infoModal'));
+document.getElementById('closeMemBtn').addEventListener('click',()=>closeModal('memModal'));
 
-document.getElementById('saveNameBtn').addEventListener('click', ()=>{
+function openSettings(){ document.getElementById('settingsNameInput').value=userName; openModal('settingsModal'); }
+function openMem(){ renderMemoryModal(); openModal('memModal'); }
+
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('sbSettingsBtn').addEventListener('click', ()=>{ if(window.innerWidth<=700)setSidebar(false); openSettings(); });
+document.getElementById('memBtn').addEventListener('click', openMem);
+document.getElementById('sbMemBtn').addEventListener('click', ()=>{ if(window.innerWidth<=700)setSidebar(false); openMem(); });
+document.getElementById('openAboutBtn').addEventListener('click',()=>{ closeModal('settingsModal'); openModal('infoModal'); });
+
+document.getElementById('saveNameBtn').addEventListener('click',()=>{
   const v = document.getElementById('settingsNameInput').value.trim();
-  if (v) { saveName(v); closeModal('settingsModal'); }
+  if(v){ saveName(v); closeModal('settingsModal'); }
 });
 
-el.vSpeed.addEventListener('input', ()=>{ state.voiceSpeed=parseFloat(el.vSpeed.value); });
+el.vSpeed.addEventListener('input',()=>{ state.voiceSpeed=parseFloat(el.vSpeed.value); });
 
-el.modelSel.addEventListener('change', ()=>{
+el.modelSel.addEventListener('change',()=>{
   localStorage.setItem('kwame_model', el.modelSel.value);
-  if (confirm('Switch model? The page will reload to download the new model.')) location.reload();
+  if(confirm('Switch model? The page will reload to download the new model.')) location.reload();
 });
+
+// ═══════════════════════════════════════════════════════
+// NEW CHAT BUTTONS
+// ═══════════════════════════════════════════════════════
+document.getElementById('newChatBtn').addEventListener('click', startNewChat);
+document.getElementById('newChatHdr').addEventListener('click', startNewChat);
 
 // ═══════════════════════════════════════════════════════
 // PWA INSTALL
@@ -996,18 +1401,17 @@ el.modelSel.addEventListener('change', ()=>{
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt', e=>{
   e.preventDefault(); deferredPrompt=e;
-  if (!localStorage.getItem('kwame_install_dismissed')) {
+  if(!localStorage.getItem('kwame_install_dismissed'))
     document.getElementById('installBanner').classList.remove('hidden');
-  }
 });
 document.getElementById('installBtn').addEventListener('click', async()=>{
-  if (!deferredPrompt) return;
+  if(!deferredPrompt) return;
   deferredPrompt.prompt();
   const {outcome} = await deferredPrompt.userChoice;
-  if (outcome==='accepted') document.getElementById('installBanner').classList.add('hidden');
+  if(outcome==='accepted') document.getElementById('installBanner').classList.add('hidden');
   deferredPrompt=null;
 });
-document.getElementById('dismissInstall').addEventListener('click', ()=>{
+document.getElementById('dismissInstall').addEventListener('click',()=>{
   document.getElementById('installBanner').classList.add('hidden');
   localStorage.setItem('kwame_install_dismissed','1');
 });
@@ -1016,24 +1420,29 @@ document.getElementById('dismissInstall').addEventListener('click', ()=>{
 // EVENTS
 // ═══════════════════════════════════════════════════════
 el.mic.addEventListener('click', toggleListening);
-el.send.addEventListener('click', ()=>{ const t=el.input.value.trim(); if(t) processInput(t); });
-el.input.addEventListener('keypress', e=>{ if(e.key==='Enter'){ const t=el.input.value.trim(); if(t) processInput(t); } });
-window.addExample = t => { el.input.value=t; el.input.focus(); };
+el.send.addEventListener('click',()=>{ const t=el.input.value.trim(); if(t) processInput(t); });
+el.input.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){
+    e.preventDefault();
+    const t=el.input.value.trim();
+    if(t) processInput(t);
+  }
+});
+
+window.triggerExample = t=>{ el.input.value=t; autoResizeInput(); el.input.focus(); };
 
 // ═══════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════
-function boot() {
-  if (el.greeting) el.greeting.textContent = userName ? `Welcome back, ${userName}` : '';
+function boot(){
+  if(el.greeting) el.greeting.textContent = userName ? `Welcome back, ${userName}` : '';
   restorePills();
   applyVoiceToggleUI();
   initSpeechRecognition();
   renderMemoryStrip();
-  if (state.synthesis) { state.synthesis.getVoices(); state.synthesis.onvoiceschanged=()=>state.synthesis.getVoices(); }
-  const intro = userName
-    ? `Hey ${userName}! Downloading the Kwame AI engine now. Watch the progress bar above happens once, then I work offline. I also remember things you tell me.`
-    : `Hello! Downloading now; watch the bar above. Once done I work offline and remember things you share with me.`;
-  addMessage('assistant', intro);
+  renderHistoryList();
+  el.modelSel.value = state.selectedModel;
+  if(state.synthesis){ state.synthesis.getVoices(); state.synthesis.onvoiceschanged=()=>state.synthesis.getVoices(); }
   initWebLLM();
 }
 </script>
