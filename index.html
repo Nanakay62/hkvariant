@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Hey Kwame (TheVariant)</title>
+<meta name="theme-color" content="#000000">
+<meta name="description" content="Hey Kwame — a private, on-device AI assistant by TheVariant">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* ════════════════════════════════════════════════════════
+   DESIGN TOKENS — Apple-inspired, single consistent palette
+   ════════════════════════════════════════════════════════ */
+:root{
+  --bg:#000000;
+  --surface:#1c1c1e;
+  --surface-2:#2c2c2e;
+  --surface-3:#3a3a3c;
+  --hairline:rgba(255,255,255,.10);
+  --hairline-soft:rgba(255,255,255,.06);
+  --accent:#0a84ff;
+  --accent-soft:rgba(10,132,255,.16);
+  --accent-press:#0066cc;
+  --green:#30d158;
+  --red:#ff453a;
+  --amber:#ff9f0a;
+  --text:#f5f5f7;
+  --text-2:#98989d;
+  --text-3:#636366;
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:26px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* Flat, single static background — no animated layers (perf-friendly) */
+#bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(10,132,255,.10), transparent),
+    var(--bg);
+}
+
+button,input,select{font-family:inherit}
+button{-webkit-tap-highlight-color:transparent}
+
+/* ── App shell ── */
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+
+/* ── Header ── */
+header{flex-shrink:0;padding:14px 18px 10px;border-bottom:1px solid var(--hairline-soft)}
+.hdr{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand-icon{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;
+}
+.brand-text{min-width:0}
+.brand-row{display:flex;align-items:center;gap:7px}
+.brand-name{font-size:16px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+.brand-badge{font-size:9.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:999px;white-space:nowrap}
+.status-row{display:flex;align-items:center;gap:5px;margin-top:1px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+#statusText{font-size:11px;color:var(--text-2)}
+.hdr-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.icon-btn{
+  width:36px;height:36px;border-radius:10px;background:var(--surface);
+  border:1px solid var(--hairline);cursor:pointer;color:var(--text);
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s var(--ease);
+}
+.icon-btn:active{background:var(--surface-2)}
+
+/* ── Install banner ── */
+#installBanner{flex-shrink:0;margin:10px 18px 0;border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--hairline)}
+#installBanner.hidden{display:none}
+#installBanner span{font-size:12px;color:var(--text-2);flex:1}
+#installBanner strong{color:var(--text)}
+.install-btn{border-radius:8px;padding:6px 13px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.dismiss-x{background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px;font-size:12px}
+
+/* ── Model loading banner ── */
+#modelBanner{flex-shrink:0;margin:10px 18px 0;border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--hairline)}
+#modelBanner.done{display:none}
+.prog-track{flex:1;height:4px;border-radius:2px;background:var(--surface-3);overflow:hidden}
+#progressBar{height:100%;width:0%;border-radius:2px;background:var(--accent);transition:width .3s var(--ease)}
+#bannerText{font-size:11px;color:var(--text-2);white-space:nowrap;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Floating status pill (signature element) ── */
+#statusPill{
+  position:fixed;top:14px;left:50%;
+  transform:translate(-50%,-90px);
+  z-index:50;display:flex;align-items:center;gap:8px;
+  padding:9px 16px;border-radius:999px;
+  background:rgba(28,28,30,.92);
+  border:1px solid var(--hairline);
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  transition:transform .35s var(--ease);
+  pointer-events:none;
+}
+#statusPill.show{transform:translate(-50%,0)}
+.pill-wave{display:flex;align-items:center;gap:2px;height:16px}
+.pill-bar{width:2.5px;border-radius:2px;background:var(--accent);animation:pbar 1s ease-in-out infinite}
+.pill-bar:nth-child(1){height:5px;animation-delay:0s}
+.pill-bar:nth-child(2){height:10px;animation-delay:.12s}
+.pill-bar:nth-child(3){height:16px;animation-delay:.24s}
+.pill-bar:nth-child(4){height:10px;animation-delay:.36s}
+.pill-bar:nth-child(5){height:5px;animation-delay:.48s}
+@keyframes pbar{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.pill-spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#statusPillText{font-size:12.5px;font-weight:500;color:var(--text)}
+
+/* ── Main scroll ── */
+main{flex:1;overflow-y:auto;padding:0 18px 8px;-webkit-overflow-scrolling:touch}
+.chat-wrap{max-width:720px;margin:0 auto}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:28px 0 18px}
+.hero h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:5px}
+.hero p{font-size:13px;color:var(--text-2)}
+.hero-greeting{font-size:13px;color:var(--accent);margin-top:6px;font-weight:500}
+
+/* ── Quick cards ── */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+@media(max-width:540px){.cards{grid-template-columns:1fr}}
+.card{
+  border-radius:var(--r-lg);padding:14px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--hairline);
+  transition:background .15s var(--ease);
+}
+.card:active{background:var(--surface-2)}
+.card-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:9px;font-size:13px;background:var(--accent-soft);color:var(--accent)}
+.card h3{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.card p{font-size:11px;color:var(--text-2)}
+
+/* ── Memory chip strip ── */
+#memoryStrip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.mem-chip{display:flex;align-items:center;gap:6px;border-radius:999px;padding:5px 11px 5px 10px;background:var(--surface);border:1px solid var(--hairline);font-size:11px;color:var(--text-2)}
+.mem-chip i.fa-brain{color:var(--accent);font-size:9px}
+.mem-chip-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:10px;padding:0;line-height:1;margin-left:2px}
+.mem-chip-del:active{color:var(--red)}
+
+/* ── Messages — iMessage-style bubbles ── */
+#messages{display:flex;flex-direction:column;gap:8px;padding-bottom:6px}
+.bubble{max-width:78%;padding:10px 14px;border-radius:18px;animation:slideIn .2s var(--ease);position:relative;font-size:14px;line-height:1.5}
+.bubble.user{background:var(--accent);color:#fff;margin-left:auto;border-bottom-right-radius:5px}
+.bubble.assistant{background:var(--surface-2);color:var(--text);margin-right:auto;border-bottom-left-radius:5px}
+@keyframes slideIn{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.bubble p{white-space:pre-wrap}
+.bubble time{font-size:9.5px;display:block;margin-top:3px}
+.bubble.user time{color:rgba(255,255,255,.65)}
+.bubble.assistant time{color:var(--text-3)}
+.copy-btn{
+  position:absolute;top:-9px;right:-9px;width:24px;height:24px;border-radius:50%;
+  background:var(--surface-3);border:1px solid var(--hairline);color:var(--text-2);
+  cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .15s var(--ease);
+}
+.bubble.assistant:hover .copy-btn{opacity:1}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+
+/* ── Footer ── */
+footer{flex-shrink:0;padding:10px 18px 14px;border-top:1px solid var(--hairline-soft)}
+.footer-inner{max-width:720px;margin:0 auto}
+.input-row{display:flex;align-items:center;gap:10px}
+.input-wrap{flex:1;position:relative}
+#textInput{
+  width:100%;border-radius:22px;padding:11px 46px 11px 16px;
+  background:var(--surface);border:1px solid var(--hairline);color:var(--text);
+  font-size:14px;outline:none;transition:border-color .15s var(--ease);
+}
+#textInput::placeholder{color:var(--text-3)}
+#textInput:focus{border-color:var(--accent)}
+#sendBtn{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;
+  cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;
+}
+#sendBtn:active{background:var(--accent-press)}
+#micButton{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent);
+  border:none;cursor:pointer;color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s var(--ease);
+}
+#micButton:active{background:var(--accent-press)}
+#micButton.listening{background:var(--red)}
+
+.quick-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:9px}
+.qa-btn{border-radius:999px;padding:5px 12px;background:var(--surface);border:1px solid var(--hairline);color:var(--text-2);font-size:11px;cursor:pointer}
+.qa-btn:active{background:var(--surface-2)}
+.footer-credit{text-align:center;margin-top:10px;font-size:10px;color:var(--text-3)}
+
+/* ── Onboarding ── */
+#onboardModal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.92)}
+#onboardModal.hidden{display:none}
+.onboard-box{border-radius:var(--r-xl);padding:34px 26px;max-width:340px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--hairline)}
+.onboard-icon{display:inline-flex;width:56px;height:56px;border-radius:16px;background:var(--accent);align-items:center;justify-content:center;font-size:23px;color:#fff;margin-bottom:18px}
+.onboard-box h2{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:7px}
+.onboard-box p{font-size:13px;color:var(--text-2);margin-bottom:20px;line-height:1.55}
+.ob-input{width:100%;border-radius:var(--r-md);padding:13px 15px;background:var(--surface-2);border:1px solid var(--hairline);color:var(--text);font-size:15px;outline:none;margin-bottom:12px;transition:border-color .15s var(--ease)}
+.ob-input:focus{border-color:var(--accent)}
+.ob-btn{width:100%;border-radius:var(--r-md);padding:13px;background:var(--accent);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.ob-btn:active{background:var(--accent-press)}
+
+/* ── Modals ── */
+.modal-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0;background:rgba(0,0,0,.6)}
+.modal-overlay.open{display:flex}
+@media(min-width:560px){.modal-overlay{align-items:center;padding:18px}}
+.modal-box{
+  position:relative;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:18px 18px 28px;
+  max-width:480px;width:100%;max-height:88vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--hairline);border-bottom:none;
+}
+@media(min-width:560px){.modal-box{border-radius:var(--r-xl);border-bottom:1px solid var(--hairline)}}
+.modal-grip{width:36px;height:4px;border-radius:2px;background:var(--surface-3);margin:0 auto 14px}
+@media(min-width:560px){.modal-grip{display:none}}
+.mhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mhdr h2{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.mclose{width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:none;color:var(--text-2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.msec{margin-bottom:22px}
+.msec:last-child{margin-bottom:0}
+.msec-label{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:9px;padding:0 2px}
+.mgroup{background:var(--surface-2);border-radius:var(--r-md);overflow:hidden}
+.mrow{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-size:13.5px;gap:12px}
+.mrow + .mrow{border-top:1px solid var(--hairline-soft)}
+.mrow span:first-child{color:var(--text)}
+.mnote{font-size:11.5px;color:var(--text-3);margin-top:8px;line-height:1.5;padding:0 2px}
+
+/* Segmented control */
+.segmented{display:flex;background:var(--surface-3);border-radius:9px;padding:2px;gap:1px;width:100%}
+.segmented button{flex:1;padding:7px 4px;border-radius:7px;font-size:12px;font-weight:500;color:var(--text-2);background:transparent;border:none;cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease);white-space:nowrap}
+.segmented button.active{background:var(--surface);color:var(--text)}
+
+.name-input{border-radius:8px;padding:7px 11px;background:var(--surface-3);border:1px solid var(--hairline);color:var(--text);font-size:13px;outline:none;width:120px}
+.name-input:focus{border-color:var(--accent)}
+.save-btn{border-radius:8px;padding:7px 13px;background:var(--accent);border:none;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}
+.save-btn:active{background:var(--accent-press)}
+.model-select{border-radius:8px;padding:6px 10px;background:var(--surface-3);border:1px solid var(--hairline);color:var(--text);font-size:12.5px;outline:none;cursor:pointer;max-width:170px}
+.model-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot-y{background:var(--amber)}.dot-g{background:var(--green)}.dot-r{background:var(--red)}
+
+/* iOS-style switch */
+.switch{width:44px;height:26px;border-radius:999px;background:var(--surface-3);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s var(--ease);border:none}
+.switch.on{background:var(--green)}
+.switch-thumb{position:absolute;left:2px;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch.on .switch-thumb{transform:translateX(18px)}
+
+input[type=range]{width:100%;accent-color:var(--accent);height:4px}
+
+.mem-list{display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto;margin-bottom:10px}
+.mem-item{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border-radius:var(--r-sm);padding:10px 12px;background:var(--surface-2);font-size:12.5px;color:var(--text);line-height:1.45}
+.mem-item-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:11px;flex-shrink:0;padding:2px}
+.mem-item-del:active{color:var(--red)}
+.mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:20px 0}
+.clear-all-btn{width:100%;border-radius:var(--r-sm);padding:10px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.25);color:var(--red);font-size:12.5px;font-weight:600;cursor:pointer}
+.clear-all-btn:active{background:rgba(255,69,58,.18)}
+
+.add-mem-row{display:flex;gap:7px}
+#manualMemInput{flex:1;width:auto}
+
+.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tech-item{border-radius:var(--r-sm);padding:10px 12px;background:var(--surface-2)}
+.tech-label{font-size:10px;color:var(--text-3)}
+.tech-value{font-size:12.5px;font-weight:600;margin-top:2px}
+.feat-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.feat-list li{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-2)}
+.check{color:var(--green);margin-top:2px;font-size:11px}
+.about-link{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface-2);border-radius:var(--r-md);font-size:13.5px;color:var(--text);cursor:pointer}
+.about-link i.fa-chevron-right{color:var(--text-3);font-size:11px}
+
+::-webkit-scrollbar{width:0;height:0}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<!-- ── Onboarding ── -->
+<div id="onboardModal">
+  <div class="onboard-box">
+    <div class="onboard-icon"><i class="fas fa-waveform"></i></div>
+    <h2>Hey, I'm Kwame</h2>
+    <p>Your private AI assistant, by TheVariant. Runs on your device, stays offline, remembers what matters. What's your name?</p>
+    <input type="text" id="obName" class="ob-input" placeholder="Your first name" maxlength="30" autocomplete="off">
+    <button class="ob-btn" id="obContinue">Continue</button>
+  </div>
+</div>
+
+<div id="app">
+  <!-- Floating status pill -->
+  <div id="statusPill">
+    <div class="pill-wave" id="pillWave"><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div><div class="pill-bar"></div></div>
+    <div class="pill-spinner" id="pillSpinner" style="display:none"></div>
+    <span id="statusPillText">Listening</span>
+  </div>
+
+  <!-- Install Banner -->
+  <div id="installBanner" class="hidden">
+    <i class="fas fa-arrow-down-to-line" style="color:var(--accent);font-size:13px;flex-shrink:0"></i>
+    <span><strong>Install Hey Kwame</strong> on your home screen for the best offline experience.</span>
+    <button class="install-btn" id="installBtn">Install</button>
+    <button class="dismiss-x" id="dismissInstall"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="hdr">
+      <div class="brand">
+        <div class="brand-icon"><i class="fas fa-waveform"></i></div>
+        <div class="brand-text">
+          <div class="brand-row">
+            <span class="brand-name">Hey Kwame</span>
+            <span class="brand-badge">TheVariant</span>
+          </div>
+          <div class="status-row"><div class="sdot"></div><span id="statusText">ready</span></div>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <button class="icon-btn" id="memBtn" title="Memory"><i class="fas fa-brain"></i></button>
+        <button class="icon-btn" id="settingsBtn" title="Settings"><i class="fas fa-gear"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Model download progress -->
+  <div id="modelBanner">
+    <i class="fas fa-microchip" style="color:var(--accent);font-size:12px;flex-shrink:0"></i>
+    <div class="prog-track"><div id="progressBar"></div></div>
+    <span id="bannerText">0%</span>
+  </div>
+
+  <!-- Main -->
+  <main id="mainScroll">
+    <div class="chat-wrap">
+      <div class="hero">
+        <h1>Hey Kwame</h1>
+        <p>Local AI · Runs on your device · Remembers you</p>
+        <div class="hero-greeting" id="heroGreeting"></div>
+      </div>
+      <div class="cards">
+        <div class="card" onclick="addExample('What time is it?')">
+          <div class="card-icon"><i class="fas fa-clock"></i></div>
+          <h3>Quick Commands</h3><p>Time, date, jokes</p>
+        </div>
+        <div class="card" onclick="addExample('Tell me a joke')">
+          <div class="card-icon"><i class="fas fa-comments"></i></div>
+          <h3>Natural Chat</h3><p>Real conversation</p>
+        </div>
+        <div class="card" onclick="addExample('Write me a birthday letter to my girlfriend')">
+          <div class="card-icon"><i class="fas fa-pen"></i></div>
+          <h3>Write for Me</h3><p>Letters, emails, drafts</p>
+        </div>
+      </div>
+      <div id="memoryStrip"></div>
+      <div id="messages"></div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="input-row">
+        <div class="input-wrap">
+          <input type="text" id="textInput" placeholder="Type or tap the mic…" autocomplete="off">
+          <button id="sendBtn"><i class="fas fa-arrow-up"></i></button>
+        </div>
+        <button id="micButton"><i class="fas fa-microphone" id="micIcon"></i></button>
+      </div>
+      <div class="quick-actions">
+        <button class="qa-btn" onclick="addExample('What can you do?')">What can you do?</button>
+        <button class="qa-btn" onclick="addExample('Tell me the weather')">Weather</button>
+        <button class="qa-btn" onclick="addExample('Tell me a joke')">Joke</button>
+        <button class="qa-btn" onclick="addExample('What do you remember about me?')">What do you remember?</button>
+      </div>
+      <div class="footer-credit">Hey Kwame · by TheVariant</div>
+    </div>
+  </footer>
+</div>
+
+<!-- ── Memory Modal ── -->
+<div id="memModal" class="modal-overlay">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-grip"></div>
+    <div class="mhdr">
+      <h2>Memory</h2>
+      <button class="mclose" id="closeMemBtn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="msec">
+      <div class="msec-label">What Kwame remembers about you</div>
+      <div class="mem-list" id="memList"></div>
+      <button class="clear-all-btn" id="clearAllMem">Clear all memory</button>
+    </div>
+    <div class="msec">
+      <div class="msec-label">Add a memory manually</div>
+      <div class="add-mem-row">
+        <input type="text" id="manualMemInput" class="name-input" placeholder="e.g. I work in tech…">
+        <button class="save-btn" id="addManualMem">Add</button>
+      </div>
+      <p class="mnote">Kwame also learns from your conversations automatically.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ── -->
+<div id="settingsModal" class="modal-overlay">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-grip"></div>
+    <div class="mhdr">
+      <h2>Settings</h2>
+      <button class="mclose" id="closeSettingsBtn"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="msec">
+      <div class="msec-label">Profile</div>
+      <div class="mgroup">
+        <div class="mrow">
+          <span>Name</span>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="settingsNameInput" class="name-input" placeholder="Your name" maxlength="30">
+            <button class="save-btn" id="saveNameBtn">Save</button>
+          </div>
+        </div>
+      </div>
+      <p class="mnote">Used in responses and letter sign-offs.</p>
+    </div>
+
+    <div class="msec">
+      <div class="msec-label">Personality</div>
+      <div class="segmented" id="tonePills">
+        <button data-tone="casual" class="active">Casual</button>
+        <button data-tone="formal">Formal</button>
+        <button data-tone="funny">Funny</button>
+      </div>
+    </div>
+
+    <div class="msec">
+      <div class="msec-label">Language</div>
+      <div class="segmented" id="langPills">
+        <button data-lang="en" class="active">English</button>
+        <button data-lang="tw">Twi</button>
+        <button data-lang="fr">Français</button>
+        <button data-lang="pid">Pidgin</button>
+      </div>
+    </div>
+
+    <div class="msec">
+      <div class="msec-label">Voice</div>
+      <div class="mgroup">
+        <div class="mrow">
+          <span>Speak responses</span>
+          <button class="switch" id="voiceToggle"><div class="switch-thumb"></div></button>
+        </div>
+        <div class="mrow" style="display:block">
+          <span style="display:block;margin-bottom:8px">Speaking speed</span>
+          <input type="range" id="voiceSpeed" min="0.5" max="2" step="0.1" value="1" disabled>
+        </div>
+      </div>
+      <p class="mnote">Off by default. Turn on to hear replies spoken aloud.</p>
+    </div>
+
+    <div class="msec">
+      <div class="msec-label">AI Model</div>
+      <div class="mgroup">
+        <div class="mrow">
+          <span>Model</span>
+          <select class="model-select" id="modelSelect">
+            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Kwame 2.5 0.5B — Fast</option>
+            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" selected>Kwame 2.5 1.5B — Smart</option>
+            <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">Kwame 3.2 3B — Best</option>
+          </select>
+        </div>
+        <div class="mrow">
+          <span>Status</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px">
+            <span class="model-dot dot-y" id="modelDot"></span>
+            <span id="modelStatus">Loading…</span>
+          </span>
+        </div>
+      </div>
+      <p class="mnote">Fast uses less memory · Smart is the default balance · Best needs more RAM.</p>
+    </div>
+
+    <div class="msec">
+      <div class="msec-label">Privacy</div>
+      <div class="mgroup">
+        <div class="mrow">
+          <span>On-device processing</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">
+            <i class="fas fa-check" style="font-size:10px"></i>Always on
+          </span>
+        </div>
+      </div>
+      <p class="mnote">After the model downloads once, everything runs locally. Nothing is sent anywhere.</p>
+    </div>
+
+    <div class="msec">
+      <div class="about-link" id="openAboutBtn">
+        <span>About Hey Kwame</span>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Info Modal ── -->
+<div id="infoModal" class="modal-overlay">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-grip"></div>
+    <div class="mhdr">
+      <h2>About</h2>
+      <button class="mclose" id="closeInfoBtn"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="text-align:center;padding:6px 0 18px">
+      <div style="display:inline-flex;width:52px;height:52px;border-radius:15px;background:var(--accent);align-items:center;justify-content:center;font-size:21px;color:#fff;margin-bottom:9px"><i class="fas fa-waveform"></i></div>
+      <div style="font-weight:700;font-size:15px;letter-spacing:-.01em">Hey Kwame (TheVariant)</div>
+      <div style="font-size:11px;color:var(--text-2);margin-top:2px">Smart · Personal · Private</div>
+    </div>
+    <div class="msec">
+      <div class="msec-label">Features</div>
+      <ul class="feat-list">
+        <li><i class="fas fa-check check"></i>Persistent memory — learns who you are over time</li>
+        <li><i class="fas fa-check check"></i>Adjustable tone, language, and voice</li>
+        <li><i class="fas fa-check check"></i>One-tap copy on every response</li>
+        <li><i class="fas fa-check check"></i>Speech recognition and optional text-to-speech</li>
+        <li><i class="fas fa-check check"></i>100% on-device after the first download</li>
+        <li><i class="fas fa-check check"></i>Installable as a home screen app</li>
+      </ul>
+    </div>
+    <div class="msec">
+      <div class="msec-label">Tech stack</div>
+      <div class="tech-grid">
+        <div class="tech-item"><div class="tech-label">Speech-to-text</div><div class="tech-value">Web Speech API</div></div>
+        <div class="tech-item"><div class="tech-label">Language model</div><div class="tech-value">WebLLM / MLC</div></div>
+        <div class="tech-item"><div class="tech-label">Text-to-speech</div><div class="tech-value">SpeechSynthesis</div></div>
+        <div class="tech-item"><div class="tech-label">Memory</div><div class="tech-value">localStorage</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { CreateMLCEngine } from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.73/+esm";
+
+// ═══════════════════════════════════════════════════════
+// PERSISTENT MEMORY ENGINE
+// ═══════════════════════════════════════════════════════
+const Memory = {
+  _key: 'kwame_memories',
+  load() { try { return JSON.parse(localStorage.getItem(this._key) || '[]'); } catch{ return []; } },
+  save(arr) { localStorage.setItem(this._key, JSON.stringify(arr)); },
+  all() { return this.load(); },
+  add(fact) {
+    const arr = this.load();
+    const dup = arr.some(f => f.toLowerCase().includes(fact.toLowerCase().slice(0,20)));
+    if (!dup && fact.trim()) { arr.push(fact.trim()); this.save(arr); }
+  },
+  remove(idx) { const arr = this.load(); arr.splice(idx,1); this.save(arr); },
+  clear() { localStorage.removeItem(this._key); },
+  toPromptBlock() {
+    const arr = this.load();
+    if (!arr.length) return '';
+    return '\n\nWhat you remember about this user:\n' + arr.map(f=>`- ${f}`).join('\n');
+  }
+};
+
+function extractMemoryFacts(userMsg, assistantMsg) {
+  const facts = [];
+  const u = userMsg.toLowerCase();
+  const nameM = u.match(/my name is (\w+)|i('m| am) (\w+)/);
+  if (nameM) facts.push(`User's name is ${nameM[1]||nameM[3]}`);
+  const jobM = u.match(/i (work|am) (as |a |an )?([\w\s]+?) (at|in|for)/);
+  if (jobM) facts.push(`Works as ${jobM[3]}`);
+  const locM = u.match(/i('m| am) (in|from|based in) ([\w\s,]+?)[\.\,!]/);
+  if (locM) facts.push(`Located in ${locM[3].trim()}`);
+  if (u.includes('girlfriend')) { const gfM = u.match(/girlfriend(?:'s name)? is (\w+)/); if(gfM) facts.push(`Girlfriend's name is ${gfM[1]}`); }
+  if (u.includes('wife'))       { const wM  = u.match(/wife(?:'s name)? is (\w+)/);       if(wM)  facts.push(`Wife's name is ${wM[1]}`); }
+  if (u.includes('boyfriend'))  { const bfM = u.match(/boyfriend(?:'s name)? is (\w+)/);  if(bfM) facts.push(`Boyfriend's name is ${bfM[1]}`); }
+  if (u.match(/i (love|like|enjoy|prefer) ([\w\s]+)/)) {
+    const pm = u.match(/i (?:love|like|enjoy|prefer) ([\w\s]{3,30})/);
+    if (pm) facts.push(`Likes/enjoys: ${pm[1].trim()}`);
+  }
+  const bdM = u.match(/my birthday is ([\w\s\d,]+)/);
+  if (bdM) facts.push(`Birthday: ${bdM[1].trim()}`);
+  facts.forEach(f => Memory.add(f));
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let userName     = localStorage.getItem('kwame_user_name') || '';
+let currentTone  = localStorage.getItem('kwame_tone') || 'casual';
+let currentLang  = localStorage.getItem('kwame_lang') || 'en';
+let voiceEnabled = localStorage.getItem('kwame_voice_enabled') === '1'; // OFF by default
+
+const state = {
+  isListening:false, isProcessing:false,
+  recognition:null, synthesis:window.speechSynthesis,
+  messages:[], engine:null, modelLoaded:false, voiceSpeed:1,
+  selectedModel: localStorage.getItem('kwame_model') || 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
+};
+
+const el = {
+  mic:        document.getElementById('micButton'),
+  micIcon:    document.getElementById('micIcon'),
+  input:      document.getElementById('textInput'),
+  send:       document.getElementById('sendBtn'),
+  msgs:       document.getElementById('messages'),
+  scroll:     document.getElementById('mainScroll'),
+  status:     document.getElementById('statusText'),
+  modelDot:   document.getElementById('modelDot'),
+  modelStat:  document.getElementById('modelStatus'),
+  banner:     document.getElementById('modelBanner'),
+  progBar:    document.getElementById('progressBar'),
+  bannerTxt:  document.getElementById('bannerText'),
+  vSpeed:     document.getElementById('voiceSpeed'),
+  voiceToggle:document.getElementById('voiceToggle'),
+  modelSel:   document.getElementById('modelSelect'),
+  memStrip:   document.getElementById('memoryStrip'),
+  greeting:   document.getElementById('heroGreeting'),
+  statusPill: document.getElementById('statusPill'),
+  pillText:   document.getElementById('statusPillText'),
+  pillWave:   document.getElementById('pillWave'),
+  pillSpin:   document.getElementById('pillSpinner'),
+};
+
+// ═══════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════
+const onboardModal = document.getElementById('onboardModal');
+if (userName) { onboardModal.classList.add('hidden'); boot(); }
+
+document.getElementById('obContinue').addEventListener('click', () => {
+  const v = document.getElementById('obName').value.trim();
+  if (!v) { document.getElementById('obName').style.borderColor='var(--red)'; return; }
+  saveName(v);
+  onboardModal.classList.add('hidden');
+  boot();
+});
+document.getElementById('obName').addEventListener('keypress', e => {
+  if (e.key==='Enter') document.getElementById('obContinue').click();
+});
+
+// ═══════════════════════════════════════════════════════
+// SYSTEM PROMPT BUILDER
+// ═══════════════════════════════════════════════════════
+const TONE_INSTRUCTIONS = {
+  casual: 'Be warm, conversational, and friendly. Use natural everyday language.',
+  formal: 'Be professional, polished, and respectful. Use proper grammar and formal vocabulary.',
+  funny:  'Be witty, playful, and add light humour where appropriate. Keep it fun without being silly.'
+};
+const LANG_INSTRUCTIONS = {
+  en:  'Respond in English.',
+  tw:  'Respond primarily in Twi (Akan language of Ghana). Use simple, clear Twi that most speakers understand. You may sprinkle in English for technical terms.',
+  fr:  'Réponds en français. Sois naturel et fluide.',
+  pid: 'Respond in West African Pidgin English (Nigerian/Ghanaian style). E.g. "How e dey?", "I sabi am well well." Keep it authentic and natural.'
+};
+
+function buildSystemPrompt() {
+  const namePart  = userName ? `The user's name is ${userName}. Use their name occasionally — naturally, not every message.` : '';
+  const memBlock  = Memory.toPromptBlock();
+  const tone      = TONE_INSTRUCTIONS[currentTone] || TONE_INSTRUCTIONS.casual;
+  const lang      = LANG_INSTRUCTIONS[currentLang] || LANG_INSTRUCTIONS.en;
+  return `You are Kwame, a helpful personal voice assistant built by TheVariant.
+${namePart}
+Tone: ${tone}
+Language: ${lang}
+Keep replies concise — 1 to 3 sentences for conversation, longer only for writing tasks like letters.
+Never use markdown, asterisks, or bullet points. Write in plain natural text.
+Never introduce yourself or say "I am Kwame your assistant." Just respond directly.
+When writing letters or messages on behalf of the user, sign them with the user's name (${userName||'the user'}), not your own.
+Never mention that you are an AI or a local model unless directly asked.
+You were created by Nana Kwame Osei Ofori Dickson — a BYU-Idaho Cum Laude graduate in Applied Technology. If anyone asks who made you or who created you, say his full name proudly. You can also gently joke about how gloriously long his name is — four names is a lot to carry, even for a Ghanaian!${memBlock}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// WEBLLM
+// ═══════════════════════════════════════════════════════
+async function initWebLLM() {
+  el.modelSel.value = state.selectedModel;
+  try {
+    state.engine = await CreateMLCEngine(state.selectedModel, {
+      initProgressCallback: (p) => {
+        const pct = Math.round((p.progress||0)*100);
+        el.progBar.style.width = pct+'%';
+        el.bannerTxt.textContent = pct+'%';
+        if (el.modelStat) el.modelStat.textContent = (p.text||'Loading…').slice(0,40);
+      }
+    });
+    state.modelLoaded = true;
+    el.banner.classList.add('done');
+    el.modelDot.className = 'model-dot dot-g';
+    el.modelStat.textContent = 'Loaded';
+    const greet = userName
+      ? `Hey ${userName}! Fully loaded and ready. Ask me anything, I'll remember what you tell me too.`
+      : `Fully loaded and ready! Ask me anything.`;
+    addMessage('assistant', greet);
+  } catch(err) {
+    console.error('WebLLM failed:', err);
+    el.progBar.style.background='var(--red)';
+    el.bannerTxt.textContent='Failed';
+    el.modelDot.className='model-dot dot-r';
+    el.modelStat.textContent='Failed – fallback mode';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RESPONSE GENERATION
+// ═══════════════════════════════════════════════════════
+async function generateResponse(input) {
+  if (!state.modelLoaded || !state.engine) return fallback(input);
+  const msgs = [
+    { role:'system', content: buildSystemPrompt() },
+    ...state.messages.slice(-10).map(m=>({role:m.role,content:m.content})),
+    { role:'user', content: input }
+  ];
+  const res = await state.engine.chat.completions.create({
+    messages:msgs, temperature:0.68, max_tokens:220, top_p:0.85
+  });
+  return res.choices[0].message.content.trim();
+}
+
+function fallback(input) {
+  const q = input.toLowerCase();
+  const n = userName ? `, ${userName}` : '';
+  if (q.includes('time')) return `The current time is ${new Date().toLocaleTimeString()}${n}.`;
+  if (q.match(/date|today/)) return `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`;
+  if (q.includes('joke')) return ['Why do programmers prefer dark mode? Because light attracts bugs!','Why did the AI go to therapy? Too many neural issues!'][Math.floor(Math.random()*2)];
+  if (q.match(/memory|remember/)) {
+    const mems = Memory.all();
+    return mems.length ? `I remember: ${mems.join('; ')}.` : `I don't have any memories saved yet${n}. Tell me things about yourself and I'll remember them!`;
+  }
+  return `Still loading${n} — watch the progress bar. Once it hits 100% I can answer anything.`;
+}
+
+// ═══════════════════════════════════════════════════════
+// SPEECH RECOGNITION
+// ═══════════════════════════════════════════════════════
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  state.recognition = new SR();
+  state.recognition.continuous = false; state.recognition.interimResults = true;
+  const langMap = { en:'en-US', tw:'ak-GH', fr:'fr-FR', pid:'en-NG' };
+  state.recognition.lang = langMap[currentLang] || 'en-US';
+  state.recognition.onstart  = () => { state.isListening=true; updateUI(); };
+  state.recognition.onend    = () => { state.isListening=false; updateUI(); };
+  state.recognition.onerror  = () => { state.isListening=false; updateUI(); };
+  state.recognition.onresult = (e) => {
+    const t = Array.from(e.results).map(r=>r[0].transcript).join('');
+    el.pillText.textContent = t || 'Listening';
+    if (e.results[0].isFinal) processInput(t);
+  };
+}
+function startListening()  { if (state.recognition && !state.isListening) { try{ state.recognition.start(); }catch(e){} } }
+function stopListening()   { if (state.recognition && state.isListening) state.recognition.stop(); state.isListening=false; updateUI(); }
+function toggleListening() { state.isListening ? stopListening() : startListening(); }
+
+// ═══════════════════════════════════════════════════════
+// PROCESS INPUT
+// ═══════════════════════════════════════════════════════
+async function processInput(text) {
+  if (!text.trim()) return;
+  stopListening();
+  addMessage('user', text);
+  el.input.value='';
+  state.isProcessing=true; updateUI();
+  try {
+    const reply = await generateResponse(text);
+    addMessage('assistant', reply);
+    if (voiceEnabled) speak(reply);
+    extractMemoryFacts(text, reply);
+    renderMemoryStrip();
+  } catch(err) {
+    console.error(err);
+    addMessage('assistant','Sorry, something went wrong. Please try again.');
+  } finally { state.isProcessing=false; updateUI(); }
+}
+
+// ═══════════════════════════════════════════════════════
+// MESSAGES
+// ═══════════════════════════════════════════════════════
+function addMessage(role, content) {
+  const div = document.createElement('div');
+  div.className = `bubble ${role}`;
+  const copyBtn = role==='assistant'
+    ? `<button class="copy-btn" title="Copy" onclick="copyText(this, ${JSON.stringify(content)})"><i class="fas fa-copy"></i></button>`
+    : '';
+  div.innerHTML = `
+    ${copyBtn}
+    <p>${content}</p>
+    <time>${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</time>`;
+  el.msgs.appendChild(div);
+  requestAnimationFrame(() => { el.scroll.scrollTop = el.scroll.scrollHeight; });
+  state.messages.push({ role, content, timestamp: new Date() });
+}
+
+window.copyText = function(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML='<i class="fas fa-check"></i>';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML='<i class="fas fa-copy"></i>'; }, 1800);
+  });
+};
+
+// ═══════════════════════════════════════════════════════
+// TTS (off by default — gated by voiceEnabled)
+// ═══════════════════════════════════════════════════════
+function speak(text) {
+  if (!state.synthesis) return;
+  state.synthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate=state.voiceSpeed; u.pitch=1; u.volume=1;
+  const pref = state.synthesis.getVoices().find(v=>v.name.includes('Google')||v.name.includes('Samantha')||v.name.includes('Daniel'));
+  if (pref) u.voice=pref;
+  state.synthesis.speak(u);
+}
+
+// ═══════════════════════════════════════════════════════
+// MEMORY STRIP
+// ═══════════════════════════════════════════════════════
+function renderMemoryStrip() {
+  const mems = Memory.all();
+  el.memStrip.innerHTML = '';
+  if (!mems.length) return;
+  mems.slice(0,4).forEach((m,i) => {
+    const chip = document.createElement('div');
+    chip.className='mem-chip';
+    chip.innerHTML=`<i class="fas fa-brain"></i>${m}<button class="mem-chip-del" onclick="deleteMem(${i})" title="Forget this"><i class="fas fa-times"></i></button>`;
+    el.memStrip.appendChild(chip);
+  });
+  if (mems.length>4) {
+    const more = document.createElement('div');
+    more.className='mem-chip';
+    more.style.cursor='pointer';
+    more.textContent=`+${mems.length-4} more`;
+    more.onclick=()=>openModal('memModal');
+    el.memStrip.appendChild(more);
+  }
+}
+
+window.deleteMem = function(idx) {
+  Memory.remove(idx);
+  renderMemoryStrip();
+  renderMemoryModal();
+};
+
+function renderMemoryModal() {
+  const list = document.getElementById('memList');
+  const mems = Memory.all();
+  if (!mems.length) { list.innerHTML='<div class="mem-empty">No memories yet. Start chatting!</div>'; return; }
+  list.innerHTML = mems.map((m,i)=>`
+    <div class="mem-item">
+      <span>${m}</span>
+      <button class="mem-item-del" onclick="deleteMem(${i})" title="Forget"><i class="fas fa-trash"></i></button>
+    </div>`).join('');
+}
+
+document.getElementById('clearAllMem').addEventListener('click', () => {
+  if (confirm('Clear all memories? This cannot be undone.')) {
+    Memory.clear(); renderMemoryStrip(); renderMemoryModal();
+  }
+});
+
+document.getElementById('addManualMem').addEventListener('click', () => {
+  const v = document.getElementById('manualMemInput').value.trim();
+  if (v) { Memory.add(v); document.getElementById('manualMemInput').value=''; renderMemoryStrip(); renderMemoryModal(); }
+});
+
+// ═══════════════════════════════════════════════════════
+// TONE + LANGUAGE (segmented controls, now in Settings)
+// ═══════════════════════════════════════════════════════
+document.getElementById('tonePills').addEventListener('click', e => {
+  const btn = e.target.closest('[data-tone]');
+  if (!btn) return;
+  currentTone = btn.dataset.tone;
+  localStorage.setItem('kwame_tone', currentTone);
+  document.querySelectorAll('#tonePills button').forEach(b=>b.classList.toggle('active', b===btn));
+});
+
+document.getElementById('langPills').addEventListener('click', e => {
+  const btn = e.target.closest('[data-lang]');
+  if (!btn) return;
+  currentLang = btn.dataset.lang;
+  localStorage.setItem('kwame_lang', currentLang);
+  document.querySelectorAll('#langPills button').forEach(b=>b.classList.toggle('active', b===btn));
+  if (state.recognition) {
+    const langMap = { en:'en-US', tw:'ak-GH', fr:'fr-FR', pid:'en-NG' };
+    state.recognition.lang = langMap[currentLang] || 'en-US';
+  }
+});
+
+function restorePills() {
+  document.querySelectorAll('#tonePills button').forEach(b=>b.classList.toggle('active', b.dataset.tone===currentTone));
+  document.querySelectorAll('#langPills button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
+}
+
+// ═══════════════════════════════════════════════════════
+// VOICE TOGGLE
+// ═══════════════════════════════════════════════════════
+function applyVoiceToggleUI() {
+  el.voiceToggle.classList.toggle('on', voiceEnabled);
+  el.vSpeed.disabled = !voiceEnabled;
+}
+el.voiceToggle.addEventListener('click', () => {
+  voiceEnabled = !voiceEnabled;
+  localStorage.setItem('kwame_voice_enabled', voiceEnabled ? '1':'0');
+  applyVoiceToggleUI();
+  if (!voiceEnabled && state.synthesis) state.synthesis.cancel();
+});
+
+// ═══════════════════════════════════════════════════════
+// STATUS PILL (signature floating indicator)
+// ═══════════════════════════════════════════════════════
+function showPill(mode) {
+  if (mode === 'listening') {
+    el.pillWave.style.display='flex'; el.pillSpin.style.display='none';
+    el.pillText.textContent='Listening';
+  } else if (mode === 'processing') {
+    el.pillWave.style.display='none'; el.pillSpin.style.display='block';
+    el.pillText.textContent='Kwame is thinking';
+  }
+  el.statusPill.classList.add('show');
+}
+function hidePill() { el.statusPill.classList.remove('show'); }
+
+// ═══════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════
+function updateUI() {
+  el.mic.classList.toggle('listening', state.isListening);
+  el.micIcon.className = state.isListening ? 'fas fa-stop' : 'fas fa-microphone';
+  el.status.textContent = state.isListening ? 'listening' : state.isProcessing ? 'thinking' : 'ready';
+  if (state.isListening) showPill('listening');
+  else if (state.isProcessing) showPill('processing');
+  else hidePill();
+}
+
+function saveName(name) {
+  userName = name.trim();
+  localStorage.setItem('kwame_user_name', userName);
+  if (el.greeting) el.greeting.textContent = userName ? `Welcome back, ${userName}` : '';
+  const si = document.getElementById('settingsNameInput');
+  if (si) si.value = userName;
+}
+
+// ═══════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+['settingsModal','infoModal','memModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', ()=>closeModal(id));
+});
+document.getElementById('closeSettingsBtn').addEventListener('click', ()=>closeModal('settingsModal'));
+document.getElementById('closeInfoBtn').addEventListener('click',     ()=>closeModal('infoModal'));
+document.getElementById('closeMemBtn').addEventListener('click',      ()=>closeModal('memModal'));
+document.getElementById('settingsBtn').addEventListener('click', ()=>{ document.getElementById('settingsNameInput').value=userName; openModal('settingsModal'); });
+document.getElementById('memBtn').addEventListener('click',      ()=>{ renderMemoryModal(); openModal('memModal'); });
+document.getElementById('openAboutBtn').addEventListener('click', ()=>{ closeModal('settingsModal'); openModal('infoModal'); });
+
+document.getElementById('saveNameBtn').addEventListener('click', ()=>{
+  const v = document.getElementById('settingsNameInput').value.trim();
+  if (v) { saveName(v); closeModal('settingsModal'); }
+});
+
+el.vSpeed.addEventListener('input', ()=>{ state.voiceSpeed=parseFloat(el.vSpeed.value); });
+
+el.modelSel.addEventListener('change', ()=>{
+  localStorage.setItem('kwame_model', el.modelSel.value);
+  if (confirm('Switch model? The page will reload to download the new model.')) location.reload();
+});
+
+// ═══════════════════════════════════════════════════════
+// PWA INSTALL
+// ═══════════════════════════════════════════════════════
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredPrompt=e;
+  if (!localStorage.getItem('kwame_install_dismissed')) {
+    document.getElementById('installBanner').classList.remove('hidden');
+  }
+});
+document.getElementById('installBtn').addEventListener('click', async()=>{
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  if (outcome==='accepted') document.getElementById('installBanner').classList.add('hidden');
+  deferredPrompt=null;
+});
+document.getElementById('dismissInstall').addEventListener('click', ()=>{
+  document.getElementById('installBanner').classList.add('hidden');
+  localStorage.setItem('kwame_install_dismissed','1');
+});
+
+// ═══════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════
+el.mic.addEventListener('click', toggleListening);
+el.send.addEventListener('click', ()=>{ const t=el.input.value.trim(); if(t) processInput(t); });
+el.input.addEventListener('keypress', e=>{ if(e.key==='Enter'){ const t=el.input.value.trim(); if(t) processInput(t); } });
+window.addExample = t => { el.input.value=t; el.input.focus(); };
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+function boot() {
+  if (el.greeting) el.greeting.textContent = userName ? `Welcome back, ${userName}` : '';
+  restorePills();
+  applyVoiceToggleUI();
+  initSpeechRecognition();
+  renderMemoryStrip();
+  if (state.synthesis) { state.synthesis.getVoices(); state.synthesis.onvoiceschanged=()=>state.synthesis.getVoices(); }
+  const intro = userName
+    ? `Hey ${userName}! Downloading the Kwame AI engine now. Watch the progress bar above — happens once, then I work offline. I also remember things you tell me.`
+    : `Hello! Downloading now — watch the bar above. Once done I work offline and remember things you share with me.`;
+  addMessage('assistant', intro);
+  initWebLLM();
+}
+</script>
+</body>
+</html>
